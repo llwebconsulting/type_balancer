@@ -1,0 +1,112 @@
+# TypeBalancer
+
+TypeBalancer is a Ruby gem that helps you evenly distribute items in a collection based on their types, ensuring a balanced representation of each type throughout the collection.
+
+## Installation
+
+Install the gem and add to the application's Gemfile by executing:
+
+```bash
+$ bundle add type_balancer
+```
+
+If bundler is not being used to manage dependencies, install the gem by executing:
+
+```bash
+$ gem install type_balancer
+```
+
+## Usage
+
+TypeBalancer works with any collection of objects that have a type field, whether it's a method or a hash key. Here's a basic example:
+
+```ruby
+require 'type_balancer'
+
+# Example with objects that respond to a type method
+class Item
+  attr_reader :type, :name
+  
+  def initialize(type, name)
+    @type = type
+    @name = name
+  end
+end
+
+items = [
+  Item.new('video', 'Video 1'),
+  Item.new('video', 'Video 2'),
+  Item.new('image', 'Image 1'),
+  Item.new('image', 'Image 2'),
+  Item.new('image', 'Image 3'),
+  Item.new('strip', 'Strip 1')
+]
+
+# Create a balancer with the collection and specify the type field
+balancer = TypeBalancer::Balancer.new(items, type_field: :type)
+
+# Get the balanced collection
+balanced_items = balancer.call
+
+# The result will have videos distributed evenly throughout,
+# with images and strips alternating in between
+```
+
+You can also work with hashes:
+
+```ruby
+items = [
+  { type: 'video', name: 'Video 1' },
+  { type: 'video', name: 'Video 2' },
+  { type: 'image', name: 'Image 1' },
+  { type: 'image', name: 'Image 2' },
+  { type: 'strip', name: 'Strip 1' }
+]
+
+# Works with both string and symbol keys
+balancer = TypeBalancer::Balancer.new(items, type_field: :type)
+balanced_items = balancer.call
+```
+
+### Customizing Type Order
+
+By default, TypeBalancer will use the types in the order they first appear in the collection. You can specify a custom order:
+
+```ruby
+# Specify the order of types
+balancer = TypeBalancer::Balancer.new(items, 
+  type_field: :type,
+  types: ['video', 'image', 'strip']
+)
+```
+
+### Adjusting Distribution Ratio
+
+The primary type (first type) is distributed according to a target ratio. By default, this is 0.2 (20% of positions). You can adjust this:
+
+```ruby
+# Use a custom distribution calculator with a different ratio
+calculator = TypeBalancer::DistributionCalculator.new(0.3) # 30%
+balancer = TypeBalancer::Balancer.new(items,
+  type_field: :type,
+  distribution_calculator: calculator
+)
+```
+
+## Development
+
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+
+To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+
+## Contributing
+
+Bug reports and pull requests are welcome on GitHub at https://github.com/yourusername/type_balancer. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/yourusername/type_balancer/blob/main/CODE_OF_CONDUCT.md).
+
+## License
+
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Code of Conduct
+
+Everyone interacting in the TypeBalancer project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/yourusername/type_balancer/blob/main/CODE_OF_CONDUCT.md).
