@@ -114,5 +114,62 @@ RSpec.describe TypeBalancer::Balancer do
         expect { result }.to raise_error(TypeBalancer::Error)
       end
     end
+
+    context 'with single type and unused primary items' do
+      let(:items) do
+        [
+          { type: 'video', name: 'Video 1' },
+          { type: 'video', name: 'Video 2' },
+          { type: 'video', name: 'Video 3' }
+        ]
+      end
+
+      let(:distribution_calculator) { instance_double(TypeBalancer::DistributionCalculator) }
+      let(:balancer) do
+        described_class.new(
+          items,
+          type_field: :type,
+          distribution_calculator: distribution_calculator
+        )
+      end
+
+      before do
+        allow(distribution_calculator).to receive(:calculate_target_positions)
+          .with(3, 3)
+          .and_return([0, 1])
+      end
+
+      it 'handles unused primary items correctly' do
+        expect(result[1][:name]).to eq('Video 2')
+      end
+    end
+
+    context 'with no remaining types' do
+      let(:items) do
+        [
+          { type: 'video', name: 'Video 1' },
+          { type: 'video', name: 'Video 2' }
+        ]
+      end
+
+      let(:distribution_calculator) { instance_double(TypeBalancer::DistributionCalculator) }
+      let(:balancer) do
+        described_class.new(
+          items,
+          type_field: :type,
+          distribution_calculator: distribution_calculator
+        )
+      end
+
+      before do
+        allow(distribution_calculator).to receive(:calculate_target_positions)
+          .with(2, 2)
+          .and_return([0, 1])
+      end
+
+      it 'places all items in calculated positions' do
+        expect(result).to eq(items)
+      end
+    end
   end
 end

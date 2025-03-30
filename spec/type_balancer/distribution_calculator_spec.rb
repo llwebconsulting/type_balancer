@@ -79,5 +79,85 @@ RSpec.describe TypeBalancer::DistributionCalculator do
         expect(positions).to eq([0])
       end
     end
+
+    context 'when target count would result in positions beyond total count' do
+      let(:total_count) { 5 }
+      let(:available_items_count) { 3 }
+      let(:target_ratio) { 0.5 } # This will make target_count = 3
+
+      it 'stops adding positions when reaching total count' do
+        expect(calculator.calculate_target_positions(total_count, available_items_count)).to eq([0, 2, 4])
+      end
+    end
+
+    context 'when target count would exceed total count' do
+      let(:total_count) { 3 }
+      let(:available_items_count) { 5 }
+      let(:target_ratio) { 0.9 } # This will make target_count = 3 and spacing = 1
+
+      it 'stops adding positions at total count' do
+        expect(calculator.calculate_target_positions(total_count, available_items_count)).to eq([0, 1, 2])
+      end
+    end
+
+    context 'when current position equals total count' do
+      let(:total_count) { 2 }
+      let(:available_items_count) { 2 }
+      let(:target_ratio) { 1.0 } # This will make target_count = 2 and spacing = 1
+
+      it 'stops adding positions at total count' do
+        expect(calculator.calculate_target_positions(total_count, available_items_count)).to eq([0, 1])
+      end
+    end
+
+    context 'when current position exceeds total count' do
+      let(:total_count) { 2 }
+      let(:available_items_count) { 3 }
+      let(:target_ratio) { 1.0 } # This will make target_count = 2 and spacing = 1
+
+      it 'stops adding positions when reaching total count' do
+        expect(calculator.calculate_target_positions(total_count, available_items_count)).to eq([0, 1])
+      end
+    end
+
+    context 'when spacing would cause current_pos to exceed total_count' do
+      let(:total_count) { 3 }
+      let(:available_items_count) { 2 }
+      let(:target_ratio) { 0.67 } # This will make target_count = 2 and spacing = 2
+
+      it 'stops adding positions when current_pos would exceed total_count' do
+        expect(calculator.calculate_target_positions(total_count, available_items_count)).to eq([0, 2])
+      end
+    end
+
+    context 'when spacing would cause current_pos to exceed total_count immediately' do
+      let(:total_count) { 2 }
+      let(:available_items_count) { 2 }
+      let(:target_ratio) { 0.5 } # This will make target_count = 1 and spacing = 2
+
+      it 'breaks the loop when current_pos >= total_count' do
+        expect(calculator.calculate_target_positions(total_count, available_items_count)).to eq([0])
+      end
+    end
+
+    context 'when target_count is zero' do
+      let(:total_count) { 2 }
+      let(:available_items_count) { 0 }
+      let(:target_ratio) { 0.5 } # This will make target_count = 0
+
+      it 'returns an empty array' do
+        expect(calculator.calculate_target_positions(total_count, available_items_count)).to eq([])
+      end
+    end
+
+    context 'when current_pos would exceed total_count' do
+      let(:total_count) { 1 }
+      let(:available_items_count) { 2 }
+      let(:target_ratio) { 1.0 } # This will make target_count = 1 and spacing = 1
+
+      it 'stops adding positions when current_pos would exceed total_count' do
+        expect(calculator.calculate_target_positions(total_count, available_items_count)).to eq([0])
+      end
+    end
   end
 end
