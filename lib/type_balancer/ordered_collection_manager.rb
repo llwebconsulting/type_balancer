@@ -7,54 +7,89 @@ module TypeBalancer
   class OrderedCollectionManager
     def initialize(size)
       @collection = Array.new(size)
-      @original_positions = {} # Track original positions for ordering
-      @has_explicit_ordering = false # Flag to indicate if we should use original order
+      @item_order = [] # Track items in their original order
+      @size = size
     end
 
     def place_at_positions(items, positions)
-      # Reset original positions for this batch of items
-      items.each_with_index do |item, i|
-        @original_positions[item] = i
-      end
+      # Store items in their original order
+      @item_order.concat(items)
 
+      # Place items at their positions
       positions.each_with_index do |pos, i|
         break if i >= items.size
 
-        @collection[pos] = items[i]
+        @collection[pos] = items[i] if pos >= 0 && pos < @size
       end
-
-      @has_explicit_ordering = true
     end
 
     alias place_items_at_positions place_at_positions
 
     def fill_gaps_alternating(primary_items, secondary_items)
-      @has_explicit_ordering = false  # Gap filling should maintain position order
-      filler = GapFillers::Alternating.new(@collection, primary_items, secondary_items)
-      @collection = filler.fill_gaps(find_empty_positions)
+      # Add new items to the order list before filling gaps
+      @item_order.concat(primary_items)
+      @item_order.concat(secondary_items)
+
+      # Find empty positions
+      empty_positions = find_empty_positions
+      return if empty_positions.empty?
+
+      # Create a copy of the collection for filling
+      collection_copy = @collection.dup
+
+      # Use C extension for alternating filling
+      result = TypeBalancer::AlternatingFiller.fill(
+        collection_copy,
+        empty_positions,
+        primary_items,
+        secondary_items
+      )
+
+      # Update collection if we got a valid result
+      @collection = result if result.is_a?(Array)
     end
 
     def fill_remaining_gaps(items_arrays)
-      @has_explicit_ordering = false  # Gap filling should maintain position order
-      filler = GapFillers::Sequential.new(@collection, items_arrays)
-      @collection = filler.fill_gaps(find_empty_positions)
+      # Add all new items to the order list before filling gaps
+      items_arrays.each { |items| @item_order.concat(items) }
+
+      # Find empty positions
+      empty_positions = find_empty_positions
+      return if empty_positions.empty?
+
+      # Create a copy of the collection for filling
+      collection_copy = @collection.dup
+
+      # Use C extension for sequential filling
+      result = TypeBalancer::SequentialFiller.fill(
+        collection_copy,
+        empty_positions,
+        items_arrays
+      )
+
+      # Update collection if we got a valid result
+      @collection = result if result.is_a?(Array)
     end
 
     def result
-      items = @collection.compact
-      if @has_explicit_ordering
-        # Sort by original position when items were explicitly placed
-        items.sort_by { |item| @original_positions[item] || Float::INFINITY }
-      else
-        # Return in position order for gap-filled items
-        items
-      end
+      # If no items have been placed, return an empty array
+      return [] if @item_order.empty?
+
+      # Get all non-nil items from the collection
+      non_nil_items = @collection.compact
+
+      # Return empty array if no items were successfully placed
+      return [] if non_nil_items.empty?
+
+      # Return all items that were successfully placed, in their original order
+      @item_order.select { |item| non_nil_items.include?(item) }
     end
 
     private
 
     def find_empty_positions
-      (0...@collection.size).reject { |i| @collection[i] }
+      # Find all positions that are nil and within bounds
+      (0...@size).select { |i| @collection[i].nil? }
     end
   end
 end

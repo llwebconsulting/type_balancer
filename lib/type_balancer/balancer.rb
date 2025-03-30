@@ -29,46 +29,43 @@ module TypeBalancer
       total_count = @collection.size
       collection_manager = OrderedCollectionManager.new(total_count)
 
-      # Place primary type (first type) at calculated positions
-      primary_items = place_primary_type(collection_manager, total_count)
+      # Group items by type
+      items_by_type = @types.map { |type| items_of_type(type) }
 
-      # Place remaining types alternating in the gaps
-      place_remaining_types(collection_manager, primary_items)
+      # Calculate target positions for each type
+      target_positions_by_type = items_by_type.map.with_index do |items, index|
+        ratio = if @types.size == 1
+                  1.0 # Use all positions for single type
+                elsif index.zero?
+                  0.4  # Higher ratio for first type
+                else
+                  0.3  # Equal ratio for remaining types
+                end
 
-      collection_manager.result
-    end
-
-    def place_primary_type(collection_manager, total_count)
-      primary_type = @types.first
-      primary_items = items_of_type(primary_type)
-
-      positions = @distribution_calculator.calculate_target_positions(
-        total_count,
-        primary_items.size
-      )
-      collection_manager.place_at_positions(primary_items.first(positions.size), positions)
-
-      # Return unused primary items for gap filling
-      primary_items[positions.size..]
-    end
-
-    def place_remaining_types(collection_manager, unused_primary_items)
-      remaining_types = @types[1..]
-      return if remaining_types.empty?
-
-      # Get items for each remaining type
-      remaining_items = remaining_types.map { |type| items_of_type(type) }
-
-      # Add unused primary items to the remaining items
-      all_remaining_items = [unused_primary_items, *remaining_items].compact.reject(&:empty?)
-
-      if all_remaining_items.size == 1
-        # If only one type of items left, fill all gaps with it
-        collection_manager.fill_remaining_gaps([all_remaining_items.first])
-      else
-        # For two or more types, fill gaps evenly among all types
-        collection_manager.fill_remaining_gaps(all_remaining_items)
+        @distribution_calculator.calculate_target_positions(
+          total_count,
+          items.size,
+          ratio
+        )
       end
+
+      # Place items at their positions
+      items_by_type.zip(target_positions_by_type).each do |items, positions|
+        next if positions.empty?
+
+        collection_manager.place_at_positions(items.first(positions.size), positions)
+      end
+
+      # Get remaining items
+      remaining_items = items_by_type.zip(target_positions_by_type).flat_map do |items, positions|
+        items[positions.size..]
+      end.compact
+
+      # Fill remaining gaps
+      collection_manager.fill_remaining_gaps([remaining_items]) if remaining_items.any?
+
+      # Return the result
+      collection_manager.result
     end
 
     def items_of_type(type)
