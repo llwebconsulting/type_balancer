@@ -1,5 +1,9 @@
 # TypeBalancer
 
+[![Gem Version](https://badge.fury.io/rb/type_balancer.svg)](https://badge.fury.io/rb/type_balancer)
+[![CI](https://github.com/yourusername/type_balancer/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/type_balancer/actions/workflows/ci.yml)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
+
 TypeBalancer is a Ruby gem that helps you evenly distribute items in a collection based on their types, ensuring a balanced representation of each type throughout the collection.
 
 ## Installation
@@ -95,9 +99,46 @@ balancer = TypeBalancer::Balancer.new(items,
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bin/setup` to install dependencies. Then:
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+- Run `bundle exec rake spec` to run the tests
+- Run `bundle exec rubocop` to check code style
+- Run `bin/console` for an interactive prompt for experimentation
+
+The development process typically involves:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+   - Add tests for any new functionality
+   - Ensure all tests pass
+   - Update documentation as needed
+4. Commit your changes (`git commit -am 'Add some amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Create a Pull Request
+
+### Running Tests
+
+The test suite uses RSpec. To run all tests with coverage reporting:
+
+```bash
+bundle exec rspec
+```
+
+### Code Style
+
+We follow the standard Ruby style guide enforced by RuboCop. To check your code:
+
+```bash
+bundle exec rubocop
+```
+
+To release a new version:
+1. Update the version number in `version.rb`
+2. Run `bundle exec rake release`
+   - This will create a git tag for the version
+   - Push git commits and tags
+   - Push the `.gem` file to [rubygems.org](https://rubygems.org)
 
 ## Contributing
 
