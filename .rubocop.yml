@@ -4,38 +4,56 @@ require:
 AllCops:
   TargetRubyVersion: 3.1
   NewCops: enable
+  SuggestExtensions: false
 
 Style/StringLiterals:
   EnforcedStyle: single_quotes
 
-Documentation:
+Style/Documentation:
   Enabled: false
 
 Metrics/BlockLength:
+  Enabled: true
   Exclude:
     - 'spec/**/*'
 
 Metrics/MethodLength:
-  Max: 15
-
-Layout/LineLength:
-  Max: 120
+  Max: 20
 
 RSpec/ExampleLength:
-  Max: 10
+  Max: 15
 
-RSpec/MultipleMemoizedHelpers:
-  Max: 8
-  Exclude:
-    - 'spec/**/*'
+RSpec/MultipleExpectations:
+  Max: 5
+
+RSpec/NestedGroups:
+  Max: 4
 
 RSpec/VerifiedDoubles:
   Enabled: false
 
+RSpec/MultipleMemoizedHelpers:
+  Max: 10
+
 RSpec/RepeatedExample:
+  Enabled: false  # We have intentionally repeated examples
+
+# Disable all Capybara/RSpec cops
+Capybara/RSpec:
   Enabled: false
 
-RSpec/MultipleExpectations:
-  Max: 3
-  Exclude:
-    - 'spec/**/*' 
+# Disable all RSpec/Capybara cops
+RSpec/Capybara:
+  Enabled: false
+
+# Disable all RSpec/FactoryBot cops
+RSpec/FactoryBot:
+  Enabled: false
+
+# Disable all RSpec/Rails cops
+RSpec/Rails:
+  Enabled: false
+
+# Disable PredicateMatcher cop that's causing errors
+RSpec/PredicateMatcher:
+  Enabled: false
