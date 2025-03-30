@@ -1,0 +1,39 @@
+version: 2
+updates:
+  # Enable version updates for Ruby gems
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    # Raise pull requests for version updates against the `main` branch
+    target-branch: "main"
+    # Labels on pull requests for version updates
+    labels:
+      - "dependencies"
+      - "automated"
+    # Allow up to 10 open pull requests for dependencies
+    open-pull-requests-limit: 10
+    # Group all minor and patch updates together
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "automated"
+      - "github-actions" 
