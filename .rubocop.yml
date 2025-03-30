@@ -1,0 +1,36 @@
+require:
+  - rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 3.1
+  NewCops: enable
+
+Style/StringLiterals:
+  EnforcedStyle: single_quotes
+
+Documentation:
+  Enabled: false
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+
+Metrics/MethodLength:
+  Max: 15
+
+Layout/LineLength:
+  Max: 120
+
+RSpec/ExampleLength:
+  Max: 10
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 8
+  Exclude:
+    - 'spec/**/*'
+
+RSpec/VerifiedDoubles:
+  Enabled: false
+
+RSpec/RepeatedExample:
+  Enabled: false 
