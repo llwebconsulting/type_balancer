@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
 require 'simplecov'
+
 SimpleCov.start do
   add_filter '/spec/'
   enable_coverage :branch
 
   add_group 'Core', 'lib/type_balancer'
   add_group 'Gap Fillers', 'lib/type_balancer/gap_fillers'
+
+  minimum_coverage line: 95, branch: 90
+  minimum_coverage_by_file line: 90, branch: 80
 end
 
 require 'type_balancer'

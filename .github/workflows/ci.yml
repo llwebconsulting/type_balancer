@@ -26,6 +26,17 @@ jobs:
       
       - name: Run tests with coverage
         run: bundle exec rspec
+        env:
+          COVERAGE: true
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-ruby-${{ matrix.ruby-version }}
+          path: coverage
+          retention-days: 14
 
   rubocop:
     name: RuboCop

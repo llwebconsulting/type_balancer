@@ -2,6 +2,7 @@
 
 [![Gem Version](https://badge.fury.io/rb/type_balancer.svg)](https://badge.fury.io/rb/type_balancer)
 [![CI](https://github.com/yourusername/type_balancer/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/type_balancer/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://github.com/yourusername/type_balancer/blob/main/spec/spec_helper.rb)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
 
 TypeBalancer is a Ruby gem that helps you evenly distribute items in a collection based on their types, ensuring a balanced representation of each type throughout the collection.

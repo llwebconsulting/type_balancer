@@ -33,4 +33,9 @@ RSpec/VerifiedDoubles:
   Enabled: false
 
 RSpec/RepeatedExample:
-  Enabled: false 
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Max: 3
+  Exclude:
+    - 'spec/**/*' 
