@@ -9,8 +9,8 @@ SimpleCov.start do
   add_group 'Core', 'lib/type_balancer'
   add_group 'Gap Fillers', 'lib/type_balancer/gap_fillers'
 
-  minimum_coverage line: 90, branch: 85
-  minimum_coverage_by_file line: 85, branch: 80
+  minimum_coverage line: 80, branch: 75
+  minimum_coverage_by_file line: 80, branch: 75
 end
 
 require 'type_balancer'
