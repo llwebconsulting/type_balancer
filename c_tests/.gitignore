@@ -1,0 +1,20 @@
+# Build directory
+build/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Coverage files
+*.gcda
+*.gcno
+coverage/
+
+# Compiled files
+*.o
+*.a
+*.so
+*.dylib
+type_balancer_tests 

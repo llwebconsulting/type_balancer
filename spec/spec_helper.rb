@@ -4,15 +4,21 @@ require 'simplecov'
 
 SimpleCov.start do
   add_filter '/spec/'
+  add_filter '/c_tests/'
+  add_filter '/ext/'
+  add_filter '/examples/'
   enable_coverage :branch
 
   add_group 'Core', 'lib/type_balancer'
   add_group 'Gap Fillers', 'lib/type_balancer/gap_fillers'
+  add_group 'C Extensions', 'ext/type_balancer'
 
   minimum_coverage line: 80, branch: 75
   minimum_coverage_by_file line: 80, branch: 75
 end
 
+# Ensure C extension is built and loaded
+require 'bundler/setup'
 require 'type_balancer'
 
 RSpec.configure do |config|
