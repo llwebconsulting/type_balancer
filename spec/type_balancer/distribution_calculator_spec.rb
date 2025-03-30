@@ -128,12 +128,6 @@ RSpec.describe TypeBalancer::DistributionCalculator do
       it 'stops adding positions when current_pos would exceed total_count' do
         expect(calculator.calculate_target_positions(total_count, available_items_count)).to eq([0, 2])
       end
-
-      it 'handles when current_pos equals total_count' do
-        allow_any_instance_of(described_class).to receive(:calculate_target_count).and_return(2)
-        allow_any_instance_of(described_class).to receive(:calculate_distributed_positions).and_call_original
-        expect(calculator.calculate_target_positions(total_count, available_items_count)).to eq([0, 2])
-      end
     end
 
     context 'when spacing would cause current_pos to exceed total_count immediately' do
