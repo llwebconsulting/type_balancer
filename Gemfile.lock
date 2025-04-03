@@ -7,6 +7,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.3)
+    benchmark-ips (2.14.0)
     diff-lcs (1.6.1)
     docile (1.4.1)
     json (2.10.2)
@@ -20,6 +21,8 @@ GEM
     racc (1.8.1)
     rainbow (3.1.1)
     rake (13.2.1)
+    rake-compiler (1.2.9)
+      rake
     regexp_parser (2.10.0)
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
@@ -54,6 +57,8 @@ GEM
     rubocop-factory_bot (2.27.1)
       lint_roller (~> 1.1)
       rubocop (~> 1.72, >= 1.72.1)
+    rubocop-rake (0.6.0)
+      rubocop (~> 1.0)
     rubocop-rspec (2.31.0)
       rubocop (~> 1.40)
       rubocop-capybara (~> 2.17)
@@ -77,10 +82,13 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  benchmark-ips (~> 2.12)
   rake (~> 13.0)
+  rake-compiler (~> 1.2)
   rspec (~> 3.0)
   rubocop (~> 1.21)
-  rubocop-rspec (~> 2.27)
+  rubocop-rake (~> 0.6.0)
+  rubocop-rspec (~> 2.26)
   simplecov (~> 0.22.0)
   type_balancer!
 

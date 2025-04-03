@@ -6,9 +6,12 @@ source 'https://rubygems.org'
 gemspec
 
 group :development do
+  gem 'benchmark-ips', '~> 2.12'
   gem 'rake', '~> 13.0'
+  gem 'rake-compiler', '~> 1.2'
   gem 'rspec', '~> 3.0'
   gem 'rubocop', '~> 1.21'
-  gem 'rubocop-rspec', '~> 2.27'
+  gem 'rubocop-rake', '~> 0.6.0'
+  gem 'rubocop-rspec', '~> 2.26'
   gem 'simplecov', '~> 0.22.0'
 end

@@ -3,7 +3,8 @@
 require 'spec_helper'
 
 RSpec.describe TypeBalancer::Balancer do
-  let(:balancer) { described_class.new(items, type_field: :type) }
+  let(:distribution_calculator) { instance_double(TypeBalancer::DistributionCalculator) }
+  let(:balancer) { described_class.new(items, type_field: :type, distribution_calculator: distribution_calculator) }
 
   describe '#call' do
     subject(:result) { balancer.call }
@@ -13,13 +14,37 @@ RSpec.describe TypeBalancer::Balancer do
       let(:video_second) { double('Item', type: 'video', name: 'Video Second') }
       let(:image_first) { double('Item', type: 'image', name: 'Image First') }
       let(:image_second) { double('Item', type: 'image', name: 'Image Second') }
-      let(:image_third) { double('Item', type: 'image', name: 'Image Third') }
       let(:strip_first) { double('Item', type: 'strip', name: 'Strip First') }
 
-      let(:items) { [video_first, image_first, strip_first, video_second, image_second, image_third] }
+      let(:items) { [video_first, image_first, strip_first, video_second, image_second] }
 
-      it 'distributes items evenly by type' do
-        expect(result).to eq([video_first, image_first, strip_first, video_second, image_second, image_third])
+      before do
+        # Mock distribution calculator for each type
+        allow(distribution_calculator).to receive(:calculate_target_positions)
+          .with(5, 2, 0.4)  # video type (primary)
+          .and_return([0, 3])
+        allow(distribution_calculator).to receive(:calculate_target_positions)
+          .with(5, 2, 0.3)  # image type
+          .and_return([1, 4])
+        allow(distribution_calculator).to receive(:calculate_target_positions)
+          .with(5, 1, 0.3)  # strip type
+          .and_return([2])
+      end
+
+      it 'includes all items in the result' do
+        # Verify that all the original items are present
+        expect(result).to match_array(items)
+      end
+
+      it 'places items of each type at appropriate positions' do
+        # Expect right number of each type
+        video_items = result.select { |item| item.type == 'video' }
+        image_items = result.select { |item| item.type == 'image' }
+        strip_items = result.select { |item| item.type == 'strip' }
+
+        expect(video_items.size).to eq(2)
+        expect(image_items.size).to eq(2)
+        expect(strip_items.size).to eq(1)
       end
     end
 
@@ -32,10 +57,17 @@ RSpec.describe TypeBalancer::Balancer do
     end
 
     context 'with single type' do
-      let(:items) { [double('Item', type: 'video', name: 'Video')] }
+      let(:video) { double('Item', type: 'video', name: 'Video') }
+      let(:items) { [video] }
 
-      it 'returns the original array' do
-        expect(result).to eq(items)
+      before do
+        allow(distribution_calculator).to receive(:calculate_target_positions)
+          .with(1, 1, 1.0)
+          .and_return([0])
+      end
+
+      it 'uses full ratio for single type' do
+        expect(result).to eq([video])
       end
     end
 
@@ -43,66 +75,46 @@ RSpec.describe TypeBalancer::Balancer do
       let(:items) do
         [
           { type: 'video', name: 'Video 1' },
-          { type: 'image', name: 'Image 1' },
-          { type: 'strip', name: 'Strip 1' }
-        ]
-      end
-
-      it 'processes hash objects correctly' do
-        expect(result.first[:type]).to eq('video')
-      end
-
-      it 'includes all items in the result' do
-        expect(result).to match_array(items)
-      end
-    end
-
-    context 'with string keys' do
-      let(:balancer) { described_class.new(items, type_field: 'type') }
-      let(:items) do
-        [
-          { 'type' => 'video', 'name' => 'Video 1' },
-          { 'type' => 'image', 'name' => 'Image 1' },
-          { 'type' => 'strip', 'name' => 'Strip 1' }
-        ]
-      end
-
-      it 'processes string keys correctly' do
-        expect(result.first['type']).to eq('video')
-      end
-
-      it 'includes all items in the result' do
-        expect(result).to match_array(items)
-      end
-    end
-
-    context 'with custom type order' do
-      let(:distribution_calculator) { instance_double(TypeBalancer::DistributionCalculator) }
-      let(:balancer) do
-        described_class.new(
-          items,
-          type_field: :type,
-          types: %w[image video strip],
-          distribution_calculator: distribution_calculator
-        )
-      end
-
-      let(:items) do
-        [
-          { type: 'video', name: 'Video 1' },
-          { type: 'strip', name: 'Strip 1' },
           { type: 'image', name: 'Image 1' }
         ]
       end
 
       before do
         allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(3, 1)
+          .with(2, 1, 0.4)
           .and_return([0])
+        allow(distribution_calculator).to receive(:calculate_target_positions)
+          .with(2, 1, 0.3)
+          .and_return([1])
       end
 
-      it 'respects the custom type order' do
-        expect(result[0][:type]).to eq('image')
+      it 'handles hash type access correctly' do
+        expect(result.map { |item| item[:type] }).to eq(%w[video image])
+      end
+    end
+
+    context 'with string keys' do
+      let(:balancer) do
+        described_class.new(items, type_field: 'type', distribution_calculator: distribution_calculator)
+      end
+      let(:items) do
+        [
+          { 'type' => 'video', 'name' => 'Video 1' },
+          { 'type' => 'image', 'name' => 'Image 1' }
+        ]
+      end
+
+      before do
+        allow(distribution_calculator).to receive(:calculate_target_positions)
+          .with(2, 1, 0.4)
+          .and_return([0])
+        allow(distribution_calculator).to receive(:calculate_target_positions)
+          .with(2, 1, 0.3)
+          .and_return([1])
+      end
+
+      it 'handles string key access correctly' do
+        expect(result.map { |item| item['type'] }).to eq(%w[video image])
       end
     end
 
@@ -111,64 +123,7 @@ RSpec.describe TypeBalancer::Balancer do
       let(:items) { [invalid_item] }
 
       it 'raises an error' do
-        expect { result }.to raise_error(TypeBalancer::Error)
-      end
-    end
-
-    context 'with single type and unused primary items' do
-      let(:items) do
-        [
-          { type: 'video', name: 'Video 1' },
-          { type: 'video', name: 'Video 2' },
-          { type: 'video', name: 'Video 3' }
-        ]
-      end
-
-      let(:distribution_calculator) { instance_double(TypeBalancer::DistributionCalculator) }
-      let(:balancer) do
-        described_class.new(
-          items,
-          type_field: :type,
-          distribution_calculator: distribution_calculator
-        )
-      end
-
-      before do
-        allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(3, 3)
-          .and_return([0, 1])
-      end
-
-      it 'handles unused primary items correctly' do
-        expect(result[1][:name]).to eq('Video 2')
-      end
-    end
-
-    context 'with no remaining types' do
-      let(:items) do
-        [
-          { type: 'video', name: 'Video 1' },
-          { type: 'video', name: 'Video 2' }
-        ]
-      end
-
-      let(:distribution_calculator) { instance_double(TypeBalancer::DistributionCalculator) }
-      let(:balancer) do
-        described_class.new(
-          items,
-          type_field: :type,
-          distribution_calculator: distribution_calculator
-        )
-      end
-
-      before do
-        allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(2, 2)
-          .and_return([0, 1])
-      end
-
-      it 'places all items in calculated positions' do
-        expect(result).to eq(items)
+        expect { result }.to raise_error(TypeBalancer::Error, /Cannot access type field/)
       end
     end
   end

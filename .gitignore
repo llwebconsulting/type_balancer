@@ -10,17 +10,37 @@
 /test/tmp/
 /test/version_tmp/
 /tmp/
+.rspec_status
+
+# C extensions
+*.o
+*.so
+*.bundle
+*.dylib
+
+# Editor directories
+.cursor/
+.idea/
+.vscode/
+
+# Documentation cache and generated files
+/.yardoc/
+/_yardoc/
+/doc/
+/rdoc/
 
 # Environment normalization
 /.bundle/
 /vendor/bundle
 /lib/bundler/man/
 
-# RSpec
-.rspec_status
+# Specific to this project
+/c_tests/build/
+*.gcda
+*.gcno
+coverage/
 
 # SimpleCov
-/coverage
 .resultset.json
 coverage/.resultset.json
 coverage/.resultset.json.lock 
