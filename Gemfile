@@ -12,6 +12,6 @@ group :development do
   gem 'rspec', '~> 3.0'
   gem 'rubocop', '~> 1.21'
   gem 'rubocop-rake', '~> 0.6.0'
-  gem 'rubocop-rspec', '~> 2.26'
+  gem 'rubocop-rspec', '~> 3.5'
   gem 'simplecov', '~> 0.22.0'
 end
