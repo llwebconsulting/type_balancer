@@ -1,11 +1,11 @@
-<img src="https://raw.githubusercontent.com/ruby/ruby.github.io/master/images/ruby-logo.svg" width="50" align="right" alt="Ruby Logo"/>
+<img src="https://www.ruby-lang.org/images/header-ruby-logo.png" width="50" align="right" alt="Ruby Logo"/>
 
 # TypeBalancer
 
 [![Gem Version](https://badge.fury.io/rb/type_balancer.svg)](https://badge.fury.io/rb/type_balancer)
-[![CI](https://github.com/yourusername/type_balancer/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/type_balancer/actions/workflows/ci.yml)
-[![Ruby Coverage](https://img.shields.io/badge/ruby--coverage-78.57%25-yellow.svg)](https://github.com/yourusername/type_balancer/blob/main/coverage/index.html)
-[![C Coverage](https://img.shields.io/badge/c--coverage-92.4%25-brightgreen.svg)](https://github.com/yourusername/type_balancer/blob/main/ext/type_balancer/README.md)
+[![CI](https://github.com/llwebconsulting/type_balancer/actions/workflows/ci.yml/badge.svg)](https://github.com/llwebconsulting/type_balancer/actions/workflows/ci.yml)
+[![Ruby Coverage](https://img.shields.io/badge/ruby--coverage-78.57%25-yellow.svg)](https://github.com/llwebconsulting/type_balancer/blob/main/coverage/index.html)
+[![C Coverage](https://img.shields.io/badge/c--coverage-92.4%25-brightgreen.svg)](https://github.com/llwebconsulting/type_balancer/blob/main/ext/type_balancer/README.md)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
 
 TypeBalancer is a Ruby gem that helps you evenly distribute items in a collection based on their types, ensuring a balanced representation of each type throughout the collection. It uses optimized C extensions for core operations, providing significant performance improvements over pure Ruby implementations.
@@ -41,7 +41,7 @@ $ gem install type_balancer
 ### Installing from Source
 
 ```bash
-$ git clone https://github.com/yourusername/type_balancer.git
+$ git clone https://github.com/llwebconsulting/type_balancer.git
 $ cd type_balancer
 $ bundle install
 $ rake compile  # Compiles C extensions
@@ -202,7 +202,7 @@ For detailed performance analysis and benchmarks, see our [C Extension Documenta
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/yourusername/type_balancer. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/yourusername/type_balancer/blob/main/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on GitHub at https://github.com/llwebconsulting/type_balancer. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/llwebconsulting/type_balancer/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
@@ -210,4 +210,4 @@ The gem is available as open source under the terms of the [MIT License](https:/
 
 ## Code of Conduct
 
-Everyone interacting in the TypeBalancer project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/yourusername/type_balancer/blob/main/CODE_OF_CONDUCT.md).
+Everyone interacting in the TypeBalancer project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/llwebconsulting/type_balancer/blob/main/CODE_OF_CONDUCT.md).
