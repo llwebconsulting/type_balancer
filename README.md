@@ -1,41 +1,14 @@
-<img src="https://raw.githubusercontent.com/ruby/www.ruby-lang.org/master/images/header-ruby-logo.png" width="50" align="right" alt="Ruby Logo"/>
+<img src="https://raw.githubusercontent.com/ruby/ruby.github.io/master/images/ruby-logo.svg" width="50" align="right" alt="Ruby Logo"/>
 
 # TypeBalancer
 
 [![Gem Version](https://badge.fury.io/rb/type_balancer.svg)](https://badge.fury.io/rb/type_balancer)
 [![CI](https://github.com/yourusername/type_balancer/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/type_balancer/actions/workflows/ci.yml)
-[![Ruby Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://github.com/yourusername/type_balancer/blob/main/spec/spec_helper.rb)
-[![C Coverage](https://yourusername.github.io/type_balancer/c-coverage.svg)](https://github.com/yourusername/type_balancer/blob/main/c_tests)
+[![Ruby Coverage](https://img.shields.io/badge/ruby--coverage-78.57%25-yellow.svg)](https://github.com/yourusername/type_balancer/blob/main/coverage/index.html)
+[![C Coverage](https://img.shields.io/badge/c--coverage-92.4%25-brightgreen.svg)](https://github.com/yourusername/type_balancer/blob/main/ext/type_balancer/README.md)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
 
 TypeBalancer is a Ruby gem that helps you evenly distribute items in a collection based on their types, ensuring a balanced representation of each type throughout the collection. It uses optimized C extensions for core operations, providing significant performance improvements over pure Ruby implementations.
-
-## Performance
-
-TypeBalancer uses C extensions to optimize critical calculations, providing significant performance improvements over pure Ruby implementations:
-
-### Latest Benchmark Results
-
-| Dataset Size | Items Distribution | C Extension Speed | Pure Ruby Speed | Performance Gain |
-|-------------|-------------------|------------------|----------------|-----------------|
-| Small | 10 [3, 4, 3] | 17.6M ops/sec (57 ns/op) | 3.0M ops/sec (338 ns/op) | 6x faster |
-| Medium | 1,000 [300, 400, 300] | 17.6M ops/sec (57 ns/op) | 147K ops/sec (6.8 μs/op) | 120x faster |
-| Large | 100,000 [30K, 40K, 30K] | 17.4M ops/sec (58 ns/op) | 1.6K ops/sec (612 μs/op) | 10,600x faster |
-
-Key Performance Characteristics:
-- Dramatic performance improvement that scales with dataset size
-- Nearly constant-time performance for C implementation regardless of dataset size
-- Exponential performance advantage for larger collections (up to 10,600x faster)
-- Extremely efficient memory and computational optimization
-- Linear performance degradation in Ruby vs constant-time in C
-
-The C extension achieves these improvements through:
-- Direct memory access for array operations
-- Optimized type comparison and grouping
-- Efficient position calculation algorithms
-- Minimal object allocation and garbage collection overhead
-
-For detailed performance analysis and benchmarks, see our [C Extension Documentation](docs/c_extensions/distributor.md).
 
 ## Installation
 
@@ -199,49 +172,33 @@ The gem includes C extensions for performance-critical operations. When working 
    make clean
    make
    ```
-3. Run tests to verify changes: `bundle exec rspec`
-4. Run benchmarks to verify performance: `bundle exec ruby benchmark/distributor_benchmark.rb`
 
-For detailed information about the C implementation, see our [C Extension Documentation](docs/c_extensions/distributor.md).
+## Performance
 
-### Running Ruby Tests
+TypeBalancer uses C extensions to optimize critical calculations, providing significant performance improvements over pure Ruby implementations:
 
-To run the Ruby tests:
+### Latest Benchmark Results
 
-```bash
-bundle exec rake spec
-```
+| Dataset Size | Items Distribution | C Extension Speed | Pure Ruby Speed | Performance Gain |
+|-------------|-------------------|------------------|----------------|-----------------|
+| Small | 10 [5] | 18.4M ops/sec (54 ns/op) | 3.1M ops/sec (324 ns/op) | 6x faster |
+| Medium | 1,000 [200] | 17.7M ops/sec (56 ns/op) | 150K ops/sec (6.7 μs/op) | 119x faster |
+| Large | 100,000 [20K] | 17.9M ops/sec (56 ns/op) | 1.7K ops/sec (600 μs/op) | 10,727x faster |
 
-### Running C Tests
+Key Performance Characteristics:
+- Dramatic performance improvement that scales with dataset size
+- Nearly constant-time performance for C implementation regardless of dataset size
+- Exponential performance advantage for larger collections (up to 10,727x faster)
+- Extremely efficient memory and computational optimization
+- Linear performance degradation in Ruby vs constant-time in C
 
-The C implementation is tested using GoogleTest. To run the C tests:
+The C extension achieves these improvements through:
+- Direct memory access for array operations
+- Optimized type comparison and grouping
+- Efficient position calculation algorithms
+- Minimal object allocation and garbage collection overhead
 
-1. Install dependencies:
-   ```bash
-   # macOS
-   brew install cmake googletest lcov
-
-   # Ubuntu/Debian
-   sudo apt-get install cmake googletest libgtest-dev lcov
-   ```
-
-2. Run the tests:
-   ```bash
-   bundle exec rake gtest
-   ```
-
-   Or run directly:
-   ```bash
-   cd c_tests
-   ./build.sh
-   ```
-
-3. To generate coverage report:
-   ```bash
-   cd c_tests
-   ./build.sh --coverage
-   ```
-   The coverage report will be generated in `c_tests/build/coverage.info`
+For detailed performance analysis and benchmarks, see our [C Extension Documentation](docs/c_extensions/distributor.md).
 
 ## Contributing
 

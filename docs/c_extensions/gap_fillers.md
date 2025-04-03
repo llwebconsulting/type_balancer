@@ -6,47 +6,29 @@ The Gap Fillers C extensions optimize the process of filling empty positions in 
 
 ## Modules
 
-The Gap Fillers functionality consists of three main modules:
+The Gap Fillers functionality consists of two main modules:
 
-1. **ItemQueue**: Manages a queue of items with efficient memory handling
-2. **SequentialFiller**: Fills gaps by cycling through available item queues
-3. **AlternatingFiller**: Fills gaps by alternating between primary and secondary items
+1. **SequentialFiller**: Fills gaps by cycling through available item arrays
+2. **AlternatingFiller**: Fills gaps by alternating between primary and secondary items
 
 ## Implementation Details
 
-### ItemQueue
+### Sequential Filler Context
 
 ```c
 typedef struct {
-    VALUE* items;      // Array of Ruby items
-    long total;        // Total number of items
-    long current;      // Current position in the queue
-} ItemQueue;
-```
-
-The ItemQueue is a core structure used by both filler implementations:
-- Direct memory access to Ruby array elements
-- Efficient copying of array data to avoid GC issues
-- Built-in bounds checking and error handling
-
-### SequentialFiller
-
-```c
-typedef struct {
-    ItemQueue** queues;      // Array of item queues
-    long queue_count;        // Number of queues
-    long current_queue;      // Current queue index
-    VALUE source_arrays;     // Keep reference to prevent GC
-    VALUE* result_ptr;       // Direct pointer to result for faster access
-    long result_size;        // Size of the result array
-} SequentialFillerContext;
+    VALUE collection;          // The collection to fill
+    VALUE items_arrays;        // Arrays of items to use for filling
+    long current_array;        // Current array index
+    long current_index;        // Current index within the current array
+} sequential_filler_context;
 ```
 
 The SequentialFiller efficiently fills empty positions using a round-robin approach:
-- Maintains multiple item queues from different arrays
-- Uses round-robin queue selection for balanced distribution
-- Direct memory access for high-performance operations
+- Maintains state about current array and index positions
+- Uses round-robin array selection for balanced distribution
 - Proper memory management with garbage collector awareness
+- Efficient nil checking and position validation
 
 #### Ruby Interface
 
@@ -60,23 +42,26 @@ TypeBalancer::SequentialFiller.fill(collection, positions, items_arrays)
 - `items_arrays` (Array): Arrays of items to use for filling positions
 
 ##### Returns
-- A copy of the collection with gaps filled in round-robin order
+- A new array with gaps filled in round-robin order from the provided items arrays
+- Returns nil if any input validation fails
 
-### AlternatingFiller
+### Alternating Filler Context
 
 ```c
 typedef struct {
-    ItemQueue* primary_items;    // Primary items queue
-    ItemQueue* secondary_items;  // Secondary items queue
-    VALUE source_arrays;         // Keep reference to prevent GC
-} AlternatingFillerContext;
+    VALUE collection;          // The collection to fill
+    VALUE primary_items;       // Primary items array
+    VALUE secondary_items;     // Secondary items array
+    long current_array;        // Current array index (0 for primary, 1 for secondary)
+    long current_index;        // Current index within the current array
+} alternating_filler_context;
 ```
 
 The AlternatingFiller efficiently fills empty positions by alternating between two sets of items:
-- Maintains separate queues for primary and secondary items
-- Alternates between queues as it fills positions
-- Falls back to available queue when one is depleted
-- Direct memory access for high-performance operations
+- Maintains separate tracking for primary and secondary items
+- Alternates between arrays as it fills positions
+- Falls back to available array when one is depleted
+- Efficient nil checking and position validation
 
 #### Ruby Interface
 
@@ -91,36 +76,42 @@ TypeBalancer::AlternatingFiller.fill(collection, positions, primary_items, secon
 - `secondary_items` (Array): Secondary items to use (for odd gaps)
 
 ##### Returns
-- A copy of the collection with gaps filled in alternating order
+- A new array with gaps filled alternating between primary and secondary items
+- Returns nil if any input validation fails
 
-## Performance Improvements
+## Memory Management
 
-The C implementations of gap fillers provide substantial performance improvements:
+Both fillers implement careful memory management:
 
-1. **Direct Memory Access**: Works directly with underlying array memory
-2. **Optimized Algorithms**: Using a round-robin approach for fair distribution
-3. **Efficient Memory Management**: Minimal allocation and proper cleanup
-4. **GC Safety**: Careful management of Ruby objects to prevent garbage collection issues
+1. **Garbage Collection Registration**
+   - All Ruby objects are properly registered with the GC
+   - Context structures are marked for GC tracking
+   - Arrays are protected from GC during operations
 
-## When to Use
+2. **Memory Safety**
+   - Input validation prevents buffer overflows
+   - Proper cleanup in error conditions
+   - Safe handling of nil values
 
-- **SequentialFiller**: When you have multiple arrays of items and need to fairly distribute them
-- **AlternatingFiller**: When you need to alternate between two types of items (primary/secondary)
+3. **Performance Optimization**
+   - Minimal object allocation
+   - Direct array access where possible
+   - Efficient position tracking
 
-## Building and Testing
+## Error Handling
 
-To build the extensions:
-```bash
-cd ext/type_balancer
-ruby gap_fillers_extconf.rb
-make
-```
+Both fillers implement robust error handling:
 
-To run the tests:
-```bash
-bundle exec rspec spec/type_balancer/sequential_filler_spec.rb
-bundle exec rspec spec/type_balancer/alternating_filler_spec.rb
-```
+1. **Input Validation**
+   - Check for nil inputs
+   - Validate array types
+   - Verify position bounds
+   - Ensure collection is not empty
+
+2. **Operation Safety**
+   - Handle array bounds gracefully
+   - Skip invalid positions
+   - Return nil on critical errors
 
 ## Example Usage
 
@@ -139,4 +130,25 @@ primary = ['P1', 'P2', 'P3']
 secondary = ['S1', 'S2', 'S3']
 result = TypeBalancer::AlternatingFiller.fill(collection, positions, primary, secondary)
 # result = ['P1', 'S1', 'P2', nil, nil, 'S2', nil, 'P3', nil, 'S3']
-``` 
+```
+
+## Building and Testing
+
+The gap fillers are built as part of the main gem:
+
+```bash
+bundle exec rake compile
+```
+
+Testing is handled through RSpec integration tests:
+
+```bash
+bundle exec rspec
+```
+
+The tests verify:
+- Proper filling of gaps
+- Handling of edge cases
+- Memory safety
+- Error conditions
+- Integration with Ruby code 
