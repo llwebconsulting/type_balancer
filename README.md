@@ -175,22 +175,47 @@ The gem includes C extensions for performance-critical operations. When working 
 
 ## Performance
 
-TypeBalancer uses C extensions to optimize critical calculations, providing significant performance improvements over pure Ruby implementations:
+TypeBalancer uses C extensions to optimize critical calculations, providing significant performance improvements over pure Ruby implementations. The gem has been tested across multiple Ruby versions (3.2.8, 3.3.7, and 3.4.2) both with and without YJIT enabled.
 
-### Latest Benchmark Results
+### Latest Benchmark Results by Ruby Version
 
-| Dataset Size | Items Distribution | C Extension Speed | Pure Ruby Speed | Performance Gain |
-|-------------|-------------------|------------------|----------------|-----------------|
-| Small | 10 [5] | 18.4M ops/sec (54 ns/op) | 3.1M ops/sec (324 ns/op) | 6x faster |
-| Medium | 1,000 [200] | 17.7M ops/sec (56 ns/op) | 150K ops/sec (6.7 μs/op) | 119x faster |
-| Large | 100,000 [20K] | 17.9M ops/sec (56 ns/op) | 1.7K ops/sec (600 μs/op) | 10,727x faster |
+#### Ruby 3.4.2 with YJIT
+| Dataset Size | Items [Available] | C Extension Speed | Pure Ruby Speed | Performance Gain |
+|-------------|-------------------|-------------------|-----------------|-----------------|
+| Small | 10 [5] | 25.8M ops/sec (38.7 ns/op) | 3.8M ops/sec (260 ns/op) | 6.7x faster |
+| Medium | 1,000 [200] | 23.0M ops/sec (43.5 ns/op) | 234K ops/sec (4.3 μs/op) | 98.2x faster |
+| Large | 100,000 [20K] | 26.5M ops/sec (37.7 ns/op) | 3.0K ops/sec (331.8 μs/op) | 8,802x faster |
 
-Key Performance Characteristics:
-- Dramatic performance improvement that scales with dataset size
-- Nearly constant-time performance for C implementation regardless of dataset size
-- Exponential performance advantage for larger collections (up to 10,727x faster)
-- Extremely efficient memory and computational optimization
-- Linear performance degradation in Ruby vs constant-time in C
+#### Ruby 3.3.7 with YJIT
+| Dataset Size | Items [Available] | C Extension Speed | Pure Ruby Speed | Performance Gain |
+|-------------|-------------------|-------------------|-----------------|-----------------|
+| Small | 10 [5] | 28.1M ops/sec (35.6 ns/op) | 3.3M ops/sec (305.3 ns/op) | 8.6x faster |
+| Medium | 1,000 [200] | 18.5M ops/sec (54.0 ns/op) | 109K ops/sec (9.2 μs/op) | 170x faster |
+| Large | 100,000 [20K] | 26.9M ops/sec (37.2 ns/op) | 1.6K ops/sec (636.4 μs/op) | 17,107x faster |
+
+#### Ruby 3.2.8 with YJIT
+| Dataset Size | Items [Available] | C Extension Speed | Pure Ruby Speed | Performance Gain |
+|-------------|-------------------|-------------------|-----------------|-----------------|
+| Small | 10 [5] | 13.4M ops/sec (74.6 ns/op) | 2.7M ops/sec (370 ns/op) | 4.9x faster |
+| Medium | 1,000 [200] | 13.8M ops/sec (72.5 ns/op) | 88K ops/sec (11.4 μs/op) | 156x faster |
+| Large | 100,000 [20K] | 13.4M ops/sec (74.6 ns/op) | 879 ops/sec (1.14 ms/op) | 15,221x faster |
+
+### Key Performance Characteristics
+
+1. YJIT Impact:
+   - Pure Ruby performance improves significantly with newer Ruby versions
+   - Ruby 3.4.2 shows the best Pure Ruby performance (~3,014 ops/sec for large datasets)
+   - The performance gap between C Extension and Pure Ruby decreases in newer versions
+
+2. Version-Specific Improvements:
+   - C Extension throughput nearly doubles from Ruby 3.2.8 to 3.3.7/3.4.2
+   - Pure Ruby performance shows consistent improvement across versions
+   - Both 3.3.7 and 3.4.2 achieve similar C Extension performance (~26.5-26.9M ops/sec)
+
+3. Scaling Characteristics:
+   - C Extension maintains near-constant performance regardless of dataset size
+   - Pure Ruby performance degrades with dataset size, but less severely in newer versions
+   - Largest performance gains observed with large datasets (8,802x - 17,107x faster)
 
 The C extension achieves these improvements through:
 - Direct memory access for array operations
@@ -198,7 +223,7 @@ The C extension achieves these improvements through:
 - Efficient position calculation algorithms
 - Minimal object allocation and garbage collection overhead
 
-For detailed performance analysis and benchmarks, see our [C Extension Documentation](docs/c_extensions/distributor.md).
+For detailed benchmark methodology and additional results, see our [Benchmark Documentation](docs/benchmarks/).
 
 ## Contributing
 

@@ -1,0 +1,277 @@
+mkdir -p tmp/aarch64-linux/distributor/3.4.2
+cd tmp/aarch64-linux/distributor/3.4.2
+checking for ruby.h... yes
+creating Makefile
+cd -
+cd tmp/aarch64-linux/distributor/3.4.2
+compiling ../../../../ext/type_balancer/distributor.c
+compiling ../../../../ext/type_balancer/gap_filler.c
+compiling ../../../../ext/type_balancer/sequential_filler.c
+compiling ../../../../ext/type_balancer/position_calculator.c
+linking shared-object type_balancer/distributor.so
+cd -
+mkdir -p tmp/aarch64-linux/stage/lib/type_balancer
+/usr/bin/install -c -m 0755 distributor.so ../../../../lib/type_balancer
+cp tmp/aarch64-linux/distributor/3.4.2/distributor.so tmp/aarch64-linux/stage/lib/type_balancer/distributor.so
+mkdir -p tmp/aarch64-linux/gap_fillers/3.4.2
+cd tmp/aarch64-linux/gap_fillers/3.4.2
+checking for ruby.h... yes
+creating Makefile
+cd -
+cd tmp/aarch64-linux/gap_fillers/3.4.2
+compiling ../../../../ext/type_balancer/gap_filler.c
+compiling ../../../../ext/type_balancer/sequential_filler.c
+compiling ../../../../ext/type_balancer/alternating_filler.c
+compiling ../../../../ext/type_balancer/item_queue.c
+linking shared-object type_balancer/gap_fillers.so
+cd -
+/usr/bin/install -c -m 0755 gap_fillers.so ../../../../lib/type_balancer
+cp tmp/aarch64-linux/gap_fillers/3.4.2/gap_fillers.so tmp/aarch64-linux/stage/lib/type_balancer/gap_fillers.so
+/usr/local/bin/ruby benchmark/distributor_benchmark.rb
+benchmark/distributor_benchmark.rb:5: warning: benchmark was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.5.0.
+You can add benchmark to your Gemfile or gemspec to silence this warning.
+YJIT Status: Not available/Disabled
+Running benchmarks...
+
+Benchmarking with total_count: 10, available_items: 5, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.000263   0.000000   0.000263 (  0.000159)
+Pure Ruby:             0.000065   0.000000   0.000065 (  0.000065)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension   663.695k i/100ms
+           Pure Ruby   101.944k i/100ms
+Calculating -------------------------------------
+         C Extension      7.527M (±32.1%) i/s  (132.85 ns/i) -     30.530M in   5.159938s
+           Pure Ruby      1.311M (±16.0%) i/s  (762.57 ns/i) -      6.422M in   5.062428s
+
+Comparison:
+         C Extension:  7527067.3 i/s
+           Pure Ruby:  1311356.4 i/s - 5.74x  slower
+
+
+Benchmarking with total_count: 1000, available_items: 200, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.000034   0.000000   0.000034 (  0.000021)
+Pure Ruby:             0.001424   0.000000   0.001424 (  0.001426)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension   644.493k i/100ms
+           Pure Ruby     3.500k i/100ms
+Calculating -------------------------------------
+         C Extension      3.492M (±63.8%) i/s  (286.38 ns/i) -      8.378M in   5.024708s
+           Pure Ruby     59.728k (±24.3%) i/s   (16.74 μs/i) -    252.000k in   5.005931s
+
+Comparison:
+         C Extension:  3491862.1 i/s
+           Pure Ruby:    59727.5 i/s - 58.46x  slower
+
+
+Benchmarking with total_count: 100000, available_items: 20000, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.000115   0.000002   0.000117 (  0.000017)
+Pure Ruby:             0.181880   0.006781   0.188661 (  0.188670)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension   670.149k i/100ms
+           Pure Ruby    67.000 i/100ms
+Calculating -------------------------------------
+         C Extension      9.749M (± 9.3%) i/s  (102.58 ns/i) -     48.921M in   5.063114s
+           Pure Ruby    652.864 (±15.2%) i/s    (1.53 ms/i) -      3.216k in   5.039357s
+
+Comparison:
+         C Extension:  9748639.5 i/s
+           Pure Ruby:      652.9 i/s - 14932.11x  slower
+
+/usr/local/bin/ruby benchmark/combined_benchmark.rb
+benchmark/combined_benchmark.rb:4: warning: benchmark was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.5.0.
+You can add benchmark to your Gemfile or gemspec to silence this warning.
+YJIT Status: Not available/Disabled
+Running benchmarks...
+
+Benchmarking with total_count: 10, available_items: 5, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.000016   0.000005   0.000021 (  0.000014)
+Pure Ruby:             0.000046   0.000013   0.000059 (  0.000061)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension   724.585k i/100ms
+           Pure Ruby   109.344k i/100ms
+Calculating -------------------------------------
+         C Extension      9.483M (±16.7%) i/s  (105.46 ns/i) -     46.373M in   5.068220s
+           Pure Ruby      1.468M (± 9.9%) i/s  (681.12 ns/i) -      7.326M in   5.050329s
+
+Comparison:
+         C Extension:  9482658.6 i/s
+           Pure Ruby:  1468160.9 i/s - 6.46x  slower
+
+
+Benchmarking with total_count: 1000, available_items: 200, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.000013   0.000000   0.000013 (  0.000011)
+Pure Ruby:             0.001090   0.000000   0.001090 (  0.001091)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension     1.029M i/100ms
+           Pure Ruby     6.952k i/100ms
+Calculating -------------------------------------
+         C Extension     10.329M (± 8.5%) i/s   (96.81 ns/i) -     51.460M in   5.020997s
+           Pure Ruby     68.148k (±11.7%) i/s   (14.67 μs/i) -    340.648k in   5.071580s
+
+Comparison:
+         C Extension: 10329244.5 i/s
+           Pure Ruby:    68147.9 i/s - 151.57x  slower
+
+
+Benchmarking with total_count: 100000, available_items: 20000, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.000056   0.000000   0.000056 (  0.000048)
+Pure Ruby:             0.197603   0.005156   0.202759 (  0.202834)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension   822.485k i/100ms
+           Pure Ruby    44.000 i/100ms
+Calculating -------------------------------------
+         C Extension      7.476M (±14.4%) i/s  (133.77 ns/i) -     37.012M in   5.088172s
+           Pure Ruby    412.678 (±43.1%) i/s    (2.42 ms/i) -      1.232k in   5.143398s
+
+Comparison:
+         C Extension:  7475525.8 i/s
+           Pure Ruby:      412.7 i/s - 18114.69x  slower
+
+/usr/local/bin/ruby benchmark/distributor_benchmark.rb
+benchmark/distributor_benchmark.rb:5: warning: benchmark was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.5.0.
+You can add benchmark to your Gemfile or gemspec to silence this warning.
+YJIT Status: Not available/Disabled
+Running benchmarks...
+
+Benchmarking with total_count: 10, available_items: 5, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.007134   0.004839   0.011973 (  0.011968)
+Pure Ruby:             0.002309   0.001744   0.004053 (  0.005287)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +YJIT +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension     1.245M i/100ms
+           Pure Ruby   365.249k i/100ms
+Calculating -------------------------------------
+         C Extension     22.297M (±11.7%) i/s   (44.85 ns/i) -    110.767M in   5.039589s
+           Pure Ruby      3.839M (± 7.6%) i/s  (260.51 ns/i) -     19.358M in   5.073969s
+
+Comparison:
+         C Extension: 22297234.7 i/s
+           Pure Ruby:  3838576.6 i/s - 5.81x  slower
+
+
+Benchmarking with total_count: 1000, available_items: 200, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.000020   0.000000   0.000020 (  0.000012)
+Pure Ruby:             0.000558   0.000000   0.000558 (  0.000558)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +YJIT +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension     1.616M i/100ms
+           Pure Ruby    23.034k i/100ms
+Calculating -------------------------------------
+         C Extension     21.250M (±11.8%) i/s   (47.06 ns/i) -    105.024M in   5.014422s
+           Pure Ruby    234.626k (±11.3%) i/s    (4.26 μs/i) -      1.175M in   5.078300s
+
+Comparison:
+         C Extension: 21249657.6 i/s
+           Pure Ruby:   234626.2 i/s - 90.57x  slower
+
+
+Benchmarking with total_count: 100000, available_items: 20000, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.000014   0.000000   0.000014 (  0.000010)
+Pure Ruby:             0.042349   0.005126   0.047475 (  0.047482)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +YJIT +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension     1.688M i/100ms
+           Pure Ruby   255.000 i/100ms
+Calculating -------------------------------------
+         C Extension     21.362M (±12.7%) i/s   (46.81 ns/i) -    106.356M in   5.064107s
+           Pure Ruby      2.615k (± 8.9%) i/s  (382.42 μs/i) -     13.005k in   5.012766s
+
+Comparison:
+         C Extension: 21361979.2 i/s
+           Pure Ruby:     2615.0 i/s - 8169.16x  slower
+
+/usr/local/bin/ruby benchmark/combined_benchmark.rb
+benchmark/combined_benchmark.rb:4: warning: benchmark was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.5.0.
+You can add benchmark to your Gemfile or gemspec to silence this warning.
+YJIT Status: Not available/Disabled
+Running benchmarks...
+
+Benchmarking with total_count: 10, available_items: 5, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.000244   0.000041   0.000285 (  0.000282)
+Pure Ruby:             0.000799   0.000000   0.000799 (  0.000800)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +YJIT +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension     1.545M i/100ms
+           Pure Ruby   360.207k i/100ms
+Calculating -------------------------------------
+         C Extension     21.863M (±10.6%) i/s   (45.74 ns/i) -    109.682M in   5.075611s
+           Pure Ruby      3.938M (± 9.4%) i/s  (253.97 ns/i) -     19.811M in   5.076252s
+
+Comparison:
+         C Extension: 21863045.3 i/s
+           Pure Ruby:  3937520.5 i/s - 5.55x  slower
+
+
+Benchmarking with total_count: 1000, available_items: 200, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.000015   0.000000   0.000015 (  0.000011)
+Pure Ruby:             0.000551   0.000002   0.000553 (  0.000553)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +YJIT +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension     1.579M i/100ms
+           Pure Ruby     3.361k i/100ms
+Calculating -------------------------------------
+         C Extension     22.099M (±12.6%) i/s   (45.25 ns/i) -    108.960M in   5.010469s
+           Pure Ruby    244.712k (±20.9%) i/s    (4.09 μs/i) -      1.170M in   5.003958s
+
+Comparison:
+         C Extension: 22099139.0 i/s
+           Pure Ruby:   244711.7 i/s - 90.31x  slower
+
+
+Benchmarking with total_count: 100000, available_items: 20000, ratio: 0.2
+                           user     system      total        real
+C Extension:           0.000014   0.000001   0.000015 (  0.000006)
+Pure Ruby:             0.028434   0.005182   0.033616 (  0.033624)
+
+Benchmark IPS (iterations per second):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +YJIT +PRISM [aarch64-linux]
+Warming up --------------------------------------
+         C Extension     1.692M i/100ms
+           Pure Ruby   259.000 i/100ms
+Calculating -------------------------------------
+         C Extension     21.922M (±11.3%) i/s   (45.62 ns/i) -    108.307M in   5.005806s
+           Pure Ruby      2.603k (± 7.8%) i/s  (384.20 μs/i) -     12.950k in   5.004982s
+
+Comparison:
+         C Extension: 21921611.7 i/s
+           Pure Ruby:     2602.8 i/s - 8422.35x  slower
+

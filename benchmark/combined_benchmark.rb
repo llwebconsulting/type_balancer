@@ -5,8 +5,14 @@ require 'benchmark'
 require 'benchmark/ips'
 require_relative '../lib/type_balancer'
 
-# Print YJIT status
-puts "YJIT Status: #{RubyVM::YJIT.enabled? ? 'Enabled' : 'Disabled'}"
+# Check YJIT status
+YJIT_ENABLED = begin
+  require 'ruby_vm/yjit'
+  RubyVM::YJIT.enabled?
+rescue LoadError, NameError
+  false
+end
+puts "YJIT Status: #{YJIT_ENABLED ? 'Enabled' : 'Not available/Disabled'}"
 
 # This is a simple wrapper class that performs the same algorithm as the C extension
 class RubyDistributor
@@ -80,14 +86,14 @@ def run_benchmark(test_case)
   Benchmark.ips do |x|
     x.config(time: 5, warmup: 2)
 
-    x.report("C Extension#{RubyVM::YJIT.enabled? ? ' (YJIT)' : ''}") do
+    x.report("C Extension#{YJIT_ENABLED ? ' (YJIT)' : ''}") do
       c_calculator.calculate_target_positions(
         test_case[:total],
         test_case[:available]
       )
     end
 
-    x.report("Pure Ruby#{RubyVM::YJIT.enabled? ? ' (YJIT)' : ''}") do
+    x.report("Pure Ruby#{YJIT_ENABLED ? ' (YJIT)' : ''}") do
       ruby_calculator.calculate_target_positions(
         test_case[:total],
         test_case[:available]
