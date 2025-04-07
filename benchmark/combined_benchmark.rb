@@ -7,8 +7,12 @@ require_relative '../lib/type_balancer'
 
 # Check YJIT status
 YJIT_ENABLED = begin
-  require 'ruby_vm/yjit'
-  RubyVM::YJIT.enabled?
+  if ENV['RUBY_YJIT_ENABLE'] == '1'
+    require 'ruby_vm/yjit'
+    RubyVM::YJIT.enabled?
+  else
+    false
+  end
 rescue LoadError, NameError
   false
 end
