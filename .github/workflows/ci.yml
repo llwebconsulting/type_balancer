@@ -44,8 +44,7 @@ jobs:
         env:
           COVERAGE: true
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-          RUBY_YJIT_ENABLE: ${{ matrix.yjit == 'enabled' }}
-
+          RUBY_YJIT_ENABLE: ${{ matrix.yjit == 'enabled' && 'true' || 'false' }}
       - name: Upload coverage results
         uses: actions/upload-artifact@v4
         if: always()
