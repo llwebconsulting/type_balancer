@@ -6,6 +6,9 @@ require 'benchmark'
 require 'benchmark/ips'
 require_relative '../lib/type_balancer'
 
+# Print YJIT status
+puts "YJIT Status: #{RubyVM::YJIT.enabled? ? 'Enabled' : 'Disabled'}"
+
 # Create a simple implementation for distribution calculation
 class RubyDistributor
   def initialize(ratio)
@@ -78,14 +81,14 @@ def run_benchmark(test_case)
   Benchmark.ips do |x|
     x.config(time: 5, warmup: 2)
 
-    x.report('C Extension') do
+    x.report("C Extension#{RubyVM::YJIT.enabled? ? ' (YJIT)' : ''}") do
       c_calculator.calculate_target_positions(
         test_case[:total],
         test_case[:available]
       )
     end
 
-    x.report('Pure Ruby') do
+    x.report("Pure Ruby#{RubyVM::YJIT.enabled? ? ' (YJIT)' : ''}") do
       ruby_calculator.calculate_target_positions(
         test_case[:total],
         test_case[:available]

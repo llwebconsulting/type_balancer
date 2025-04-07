@@ -14,6 +14,15 @@ jobs:
       matrix:
         # Adjusting Ruby versions based on our gemspec requirement
         ruby-version: ['3.1', '3.2', '3.3', '3.4']
+        yjit: ['disabled']
+        # Add YJIT enabled configuration for Ruby >= 3.2
+        include:
+          - ruby-version: '3.2'
+            yjit: 'enabled'
+          - ruby-version: '3.3'
+            yjit: 'enabled'
+          - ruby-version: '3.4'
+            yjit: 'enabled'
 
     steps:
       - uses: actions/checkout@v4
@@ -35,12 +44,13 @@ jobs:
         env:
           COVERAGE: true
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          RUBY_YJIT_ENABLE: ${{ matrix.yjit == 'enabled' }}
 
       - name: Upload coverage results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage-report-ruby-${{ matrix.ruby-version }}
+          name: coverage-report-ruby-${{ matrix.ruby-version }}-yjit-${{ matrix.yjit }}
           path: coverage
           retention-days: 14
 
