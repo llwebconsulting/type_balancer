@@ -62,6 +62,48 @@ balancer = TypeBalancer::Balancer.new(items, type_field: :type)
 balanced_items = balancer.call
 ```
 
+### Implementation Selection
+
+TypeBalancer provides both C extension and pure Ruby implementations. By default, it uses C extensions for optimal performance, but you can configure which implementation to use:
+
+```ruby
+# Configure globally to use C extensions (default)
+TypeBalancer.configure do |config|
+  config.use_c_extensions = true
+end
+
+# Or switch to pure Ruby implementation
+TypeBalancer.configure do |config|
+  config.use_c_extensions = false
+end
+
+# Then use TypeBalancer as normal
+balanced_items = TypeBalancer.balance(items, type_field: :type)
+```
+
+### Quality Testing
+
+The gem includes a comprehensive quality testing script that verifies both implementations are working correctly. To run the tests:
+
+```bash
+$ ruby examples/quality.rb
+```
+
+The quality script tests:
+- C extension functionality (default implementation)
+- Pure Ruby implementation
+- Custom object handling
+- Performance comparison between implementations
+- Edge cases (empty collections, single items, etc.)
+- Type ordering
+- Large dataset handling (10,000+ items)
+
+The script provides detailed output including:
+- Test progress indicators
+- Performance benchmarks
+- Comprehensive test results summary
+- Exit code 0 for success, 1 for any failures
+
 For detailed examples, including:
 - Basic usage with Ruby objects
 - Working with hashes

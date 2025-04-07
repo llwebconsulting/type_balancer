@@ -4,6 +4,28 @@ require_relative 'type_balancer/version'
 
 module TypeBalancer
   class Error < StandardError; end
+
+  class Configuration
+    attr_accessor :use_c_extensions
+
+    def initialize
+      @use_c_extensions = true # Default to C extensions for best performance
+    end
+  end
+
+  class << self
+    def configuration
+      @configuration ||= Configuration.new
+    end
+
+    def configure
+      yield(configuration) if block_given?
+    end
+
+    def use_c_extensions?
+      configuration.use_c_extensions
+    end
+  end
 end
 
 require_relative 'type_balancer/distribution_calculator'
@@ -74,7 +96,7 @@ module TypeBalancer
   end
 
   def self.balance(collection, type_field: :type, type_order: nil)
-    if ENV['USE_C_BALANCER']
+    if use_c_extensions?
       CBalancer.new(collection, type_field, type_order || extract_types(collection, type_field)).balance
     else
       Balancer.new(collection, type_field: type_field, types: type_order).call
