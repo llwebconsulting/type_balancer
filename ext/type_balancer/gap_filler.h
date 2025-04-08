@@ -8,8 +8,8 @@
 extern "C" {
 #endif
 
-// Initialize all gap fillers
-void Init_gap_fillers(void);
+// Initialize the type_balancer extension
+void Init_type_balancer(void);
 
 #ifdef __cplusplus
 }

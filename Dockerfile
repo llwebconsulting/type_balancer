@@ -30,8 +30,8 @@ RUN git init && \
 # Install dependencies
 RUN bundle install
 
-# Create necessary directory structure and compile extensions
-RUN bundle exec rake compile
+# Create directory for compiled files
+RUN mkdir -p /app/compiled
 
-# Run benchmarks
+# Don't compile during build - will be done at runtime with mounted volume
 CMD ["bundle", "exec", "rake", "benchmark:complete"] 

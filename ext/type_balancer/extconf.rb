@@ -9,6 +9,9 @@ $CFLAGS << ' -O3 -Wall -Wextra -Wno-unused-parameter'
 # Add the current directory to the include path
 $CFLAGS << " -I$(srcdir)"
 
+# Add include paths for other extensions
+$CFLAGS << " -I$(srcdir)/../type_balancer_balancer"
+
 # Add include paths
 dir_config('type_balancer')
 

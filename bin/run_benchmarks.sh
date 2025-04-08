@@ -6,6 +6,11 @@ RUBY_VERSIONS=("3.2.8" "3.3.7" "3.4.2")
 # Array to store image tags for cleanup
 IMAGES_TO_CLEANUP=()
 
+# Create a volume for sharing compiled files
+COMPILE_VOLUME="type_balancer_compiled"
+echo "Creating shared volume for compiled files..."
+docker volume create ${COMPILE_VOLUME}
+
 # Function to run benchmarks for a specific Ruby version
 run_benchmarks() {
     local ruby_version=$1
@@ -32,8 +37,12 @@ run_benchmarks() {
     mkdir -p benchmark_results
 
     # Run the benchmarks and save results
-    # --rm flag ensures container is removed after running
-    docker run --rm ${image_tag} /bin/bash -c "\
+    # Mount the shared volume to /app/compiled for storing compiled files
+    docker run --rm \
+        -v ${COMPILE_VOLUME}:/app/compiled \
+        ${image_tag} /bin/bash -c "\
+        mkdir -p /app/compiled/${ruby_version}${tag_suffix} && \
+        ln -sf /app/compiled/${ruby_version}${tag_suffix} /app/lib/type_balancer && \
         bundle exec rake compile && \
         bundle exec rake benchmark:complete 2>&1" \
         > "benchmark_results/ruby${ruby_version}${tag_suffix}.txt"
@@ -59,4 +68,9 @@ for image in "${IMAGES_TO_CLEANUP[@]}"; do
     echo "Removing image ${image}"
     docker rmi ${image}
 done
+
+# Cleanup volume
+echo "Cleaning up shared volume..."
+docker volume rm ${COMPILE_VOLUME}
+
 echo "Cleanup complete." 

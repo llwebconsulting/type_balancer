@@ -1,10 +1,15 @@
 // Position calculator interface
 // Responsible for calculating initial position distributions
 
-#ifndef POSITION_CALCULATOR_H
-#define POSITION_CALCULATOR_H
+#ifndef USERS_ANON_GEMS_TYPE_BALANCER_EXT_TYPE_BALANCER_POSITION_CALCULATOR_H
+#define USERS_ANON_GEMS_TYPE_BALANCER_EXT_TYPE_BALANCER_POSITION_CALCULATOR_H
 
-#include <ruby.h>
+#include <stddef.h>
+
+// Error codes for position calculation
+#define POSITION_SUCCESS 0
+#define POSITION_INVALID_INPUT 1
+#define POSITION_MEMORY_ERROR 2
 
 // Configuration for position calculation
 typedef struct {
@@ -12,23 +17,21 @@ typedef struct {
     long target_count;   // Number of positions to calculate
 } PositionConfig;
 
-// Result of position calculation
+// Result structure for position calculation
 typedef struct {
-    long* positions;     // Array of calculated positions
-    long count;         // Number of positions calculated
-    int error_code;     // 0 for success, non-zero for error
+    double* positions;   // Array of calculated positions
+    size_t count;       // Number of positions in the array
+    int error_code;     // Error code (0 for success)
 } PositionResult;
 
 // Calculate target count based on total count and ratio
 // Returns calculated target count, respecting available_items limit
 long calculate_target_count(long total_count, long available_items, double target_ratio);
 
-// Calculate initial position distribution
-// Returns array of positions and count in PositionResult
-// Caller is responsible for freeing positions array
-PositionResult calculate_positions(PositionConfig* config);
+// Calculate positions based on configuration
+PositionResult calculate_positions(const PositionConfig* config);
 
-// Free resources associated with a PositionResult
+// Free resources associated with a position result
 void free_position_result(PositionResult* result);
 
-#endif // POSITION_CALCULATOR_H 
+#endif /* USERS_ANON_GEMS_TYPE_BALANCER_EXT_TYPE_BALANCER_POSITION_CALCULATOR_H */ 

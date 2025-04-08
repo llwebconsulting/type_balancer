@@ -3,8 +3,8 @@
 module TypeBalancer
   # This file serves as a wrapper for the C extension gap fillers
   begin
-    # Try to load the C extension
-    require 'type_balancer/gap_fillers'
+    # Load the main extension which includes the gap fillers
+    require 'type_balancer/type_balancer'
     GAP_FILLERS_EXT_LOADED = true
   rescue LoadError => e
     # Don't provide a fallback - the C extension is required
@@ -12,7 +12,7 @@ module TypeBalancer
 
     # Raise an error with detailed instructions
     raise LoadError, <<~ERROR_MESSAGE
-      The C extension 'gap_fillers' could not be loaded: #{e.message}
+      The C extension could not be loaded: #{e.message}
 
       This gem requires the C extension to be properly built. To fix this:
 

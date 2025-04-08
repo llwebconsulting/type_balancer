@@ -2,6 +2,7 @@
 #define SPACING_CALCULATOR_H
 
 #include <ruby.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,6 +23,14 @@ size_t calculate_initial_offset(size_t collection_size, size_t item_count, size_
 // Calculate target count based on total count and ratio
 // Returns calculated target count, respecting available_items limit
 long calculate_target_count(long total_count, long available_items, double target_ratio);
+
+// Calculate spacing for multiple inputs at once using SIMD
+void calculate_spacing_batch(const long* total_counts, const long* target_counts, 
+                           double* results, size_t count);
+
+// Calculate spacing for multiple inputs with custom batch size
+void calculate_spacing_batch_preallocated(const long* total_counts, const long* target_counts,
+                                        double* results, size_t count, size_t batch_size);
 
 #ifdef __cplusplus
 }

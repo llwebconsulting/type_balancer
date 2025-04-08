@@ -1,114 +1,88 @@
-#include <stdlib.h>
-#include <math.h>
 #include "position_calculator.h"
-#include "position_generator.h"
+#include <ruby.h>
+#include <math.h>
+#include <stdlib.h>
+
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
+
+#ifdef __ARM_NEON
+#include <arm_neon.h>
+#endif
 
 // Calculate target count based on total count and ratio
 long calculate_target_count(long total_count, long available_items, double target_ratio) {
-    // Handle invalid inputs
     if (total_count <= 0 || available_items <= 0 || target_ratio <= 0.0 || target_ratio > 1.0) {
         return 0;
     }
     
-    // Calculate target count based on ratio
-    long target = (long)round(total_count * target_ratio);
-    
-    // Ensure at least one position if ratio is positive
-    if (target == 0 && target_ratio > 0.0) {
-        target = 1;
-    }
-    
-    // Limit by available items and total count
-    if (target > available_items) {
-        target = available_items;
-    }
-    if (target > total_count) {
-        target = total_count;
-    }
-    
-    return target;
+    double target = total_count * target_ratio;
+    long result = (long)round(target);
+    return result > available_items ? available_items : result;
 }
 
-// Calculate initial position distribution
-PositionResult calculate_positions(PositionConfig* config) {
-    PositionResult result = {NULL, 0, 0};
+// Calculate positions using SIMD when available
+PositionResult calculate_positions(const PositionConfig* config) {
+    PositionResult result = {NULL, 0, POSITION_INVALID_INPUT};
     
-    // Handle edge cases and invalid input
-    if (!config || config->total_count <= 0) {
-        result.error_code = 1;
+    if (!config || config->total_count <= 0 || config->target_count <= 0) {
         return result;
     }
     
-    // Handle zero target count as a valid case
-    if (config->target_count == 0) {
-        result.positions = (long*)malloc(sizeof(long));
-        if (!result.positions) {
-            result.error_code = 2;
-            return result;
-        }
-        result.count = 0;
-        result.error_code = 0;
-        return result;
-    }
-    
-    // Check if target count is valid
-    if (config->target_count < 0 || config->target_count > config->total_count) {
-        result.error_code = 1;
-        return result;
-    }
-    
-    // Allocate memory for positions
-    result.positions = (long*)malloc(config->target_count * sizeof(long));
+    result.positions = (double*)malloc(config->target_count * sizeof(double));
     if (!result.positions) {
-        result.error_code = 2;
+        result.error_code = POSITION_MEMORY_ERROR;
         return result;
     }
     
-    // Handle single item case
-    if (config->target_count == 1) {
-        result.positions[0] = 0;
-        result.count = 1;
-        result.error_code = 0;
-        return result;
+    double spacing = (double)config->total_count / (double)config->target_count;
+    double current = spacing / 2.0;
+    
+#ifdef __AVX2__
+    // Process 4 positions at a time using AVX2
+    const int simd_width = 4;
+    __m256d vec_spacing = _mm256_set1_pd(spacing);
+    __m256d vec_current = _mm256_set_pd(current + spacing * 3, current + spacing * 2,
+                                       current + spacing, current);
+    
+    int i;
+    for (i = 0; i + simd_width <= config->target_count; i += simd_width) {
+        _mm256_storeu_pd(&result.positions[i], vec_current);
+        vec_current = _mm256_add_pd(vec_current, _mm256_set1_pd(spacing * simd_width));
     }
     
-    // Handle case where we need all positions
-    if (config->target_count == config->total_count) {
-        for (long i = 0; i < config->target_count; i++) {
-            result.positions[i] = i;
-        }
-        result.count = config->target_count;
-        result.error_code = 0;
-        return result;
+    // Handle remaining positions
+    current += spacing * i;
+#elif defined(__ARM_NEON)
+    // Process 2 positions at a time using NEON
+    const int simd_width = 2;
+    float64x2_t vec_spacing = vdupq_n_f64(spacing);
+    float64x2_t vec_current = vsetq_lane_f64(current + spacing, vdupq_n_f64(current), 1);
+    
+    int i;
+    for (i = 0; i + simd_width <= config->target_count; i += simd_width) {
+        vst1q_f64(&result.positions[i], vec_current);
+        vec_current = vaddq_f64(vec_current, vmulq_n_f64(vec_spacing, simd_width));
     }
     
-    // Calculate spacing between positions for even distribution
-    double spacing = (double)(config->total_count - 1) / (config->target_count - 1);
+    // Handle remaining positions
+    current += spacing * i;
+#else
+    int i = 0;
+#endif
     
-    // Calculate positions with even spacing
-    for (long i = 0; i < config->target_count; i++) {
-        double exact_pos = i * spacing;
-        long rounded_pos = (long)round(exact_pos);
-        
-        // Ensure position is within bounds
-        if (rounded_pos >= config->total_count) {
-            rounded_pos = config->total_count - 1;
-        }
-        
-        result.positions[i] = rounded_pos;
-    }
-    
-    // Ensure last position is at the end if we're not using all positions
-    if (config->target_count > 1 && config->target_count < config->total_count) {
-        result.positions[config->target_count - 1] = config->total_count - 1;
+    // Handle remaining positions
+    for (; i < config->target_count; i++) {
+        result.positions[i] = current;
+        current += spacing;
     }
     
     result.count = config->target_count;
-    result.error_code = 0;
+    result.error_code = POSITION_SUCCESS;
     return result;
 }
 
-// Free resources associated with a PositionResult
 void free_position_result(PositionResult* result) {
     if (result && result->positions) {
         free(result->positions);

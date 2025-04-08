@@ -8,8 +8,8 @@
 
 VALUE rb_mTypeBalancer;
 
-// Initialize all gap fillers
-void Init_gap_fillers(void) {
+// Initialize the type_balancer extension
+void Init_type_balancer(void) {
     // Create the TypeBalancer module
     rb_mTypeBalancer = rb_define_module("TypeBalancer");
     
