@@ -1,5 +1,5 @@
 #include <ruby.h>
-#include "distributor.h"
+#include "balancer.h"
 
 typedef struct {
     VALUE collection;
@@ -89,9 +89,11 @@ static VALUE rb_balancer_balance(VALUE self) {
     for (long i = 0; i < RARRAY_LEN(state->types); i++) {
         VALUE items = RARRAY_AREF(items_by_type, i);
         double ratio = (RARRAY_LEN(state->types) == 1) ? 1.0 :
-                      (i == 0) ? 0.4 : 0.3;
+                      (i == 0) ? 0.35 : 0.25;
                       
-        VALUE positions = rb_funcall(rb_mKernel, rb_intern("calculate_target_positions"), 3,
+        VALUE mTypeBalancer = rb_const_get(rb_cObject, rb_intern("TypeBalancer"));
+        VALUE cDistributor = rb_const_get(mTypeBalancer, rb_intern("Distributor"));
+        VALUE positions = rb_funcall(cDistributor, rb_intern("calculate_target_positions"), 3,
                                    LONG2NUM(state->total_count),
                                    LONG2NUM(RARRAY_LEN(items)),
                                    DBL2NUM(ratio));
@@ -140,16 +142,18 @@ static void balancer_free(void* ptr) {
     xfree(ptr);
 }
 
-static VALUE balancer_alloc(VALUE klass) {
-    BalancerState *state = (BalancerState *)xmalloc(sizeof(BalancerState));
+static VALUE rb_balancer_alloc(VALUE klass) {
+    BalancerState* state = ALLOC(BalancerState);
+    MEMZERO(state, BalancerState, 1);
     return Data_Wrap_Struct(klass, balancer_mark, balancer_free, state);
 }
 
+// Initialize the extension
 void Init_balancer(void) {
     VALUE mTypeBalancer = rb_define_module("TypeBalancer");
-    VALUE cBalancer = rb_define_class_under(mTypeBalancer, "Balancer", rb_cObject);
+    VALUE cBalancer = rb_define_class_under(mTypeBalancer, "CBalancer", rb_cObject);
     
-    rb_define_alloc_func(cBalancer, balancer_alloc);
+    rb_define_alloc_func(cBalancer, rb_balancer_alloc);
     rb_define_method(cBalancer, "initialize", rb_balancer_initialize, 3);
     rb_define_method(cBalancer, "balance", rb_balancer_balance, 0);
 } 

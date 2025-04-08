@@ -10,7 +10,7 @@ require 'rubocop/rake_task'
 
 RuboCop::RakeTask.new
 
-Rake::ExtensionTask.new('distributor') do |ext|
+Rake::ExtensionTask.new('type_balancer') do |ext|
   ext.lib_dir = 'lib/type_balancer'
   ext.ext_dir = 'ext/type_balancer'
   ext.source_pattern = '*.{c,h}'

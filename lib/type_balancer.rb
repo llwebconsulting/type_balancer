@@ -23,25 +23,28 @@ module TypeBalancer
     end
 
     def use_c_extensions?
-      configuration.use_c_extensions
+      # Check if C extensions are actually available
+      return false unless configuration.use_c_extensions
+
+      begin
+        require 'type_balancer/distributor'
+        require 'type_balancer/balancer'
+        true
+      rescue LoadError
+        false
+      end
     end
   end
 end
 
+# Now load Ruby implementations
 require_relative 'type_balancer/distribution_calculator'
 require_relative 'type_balancer/ordered_collection_manager'
-
-# Load gap fillers C extension
 require_relative 'type_balancer/gap_fillers_ext'
-
-# Load Ruby interfaces for C extensions
 require_relative 'type_balancer/alternating_filler'
 require_relative 'type_balancer/sequential_filler'
-
 require_relative 'type_balancer/balancer'
-
-# Load C extensions
-require 'type_balancer/distributor'
+require_relative 'type_balancer/distributor'
 
 module TypeBalancer
   # C extension-based balancer
@@ -49,62 +52,106 @@ module TypeBalancer
     def initialize(collection, type_field, types = nil)
       @collection = collection
       @type_field = type_field
-      @types = types || TypeBalancer.send(:extract_types, collection, type_field)
+      @types = types || extract_types
     end
 
     def balance
       return [] if @collection.empty?
 
       # Group items by type
-      items_by_type = {}
-      @types.each { |type| items_by_type[type] = [] }
+      items_by_type = @collection.group_by { |item| get_type(item) }
 
-      @collection.each do |item|
-        item_type = item[@type_field] || item[@type_field.to_s]
-        items_by_type[item_type] << item if items_by_type.key?(item_type)
-      end
-
-      # Use C extensions for position calculations
-      type_counts = items_by_type.values.map(&:size)
+      # Calculate target positions for each type
       total_count = @collection.size
-      target_positions = []
+      positions_by_type = {}
 
-      # Calculate positions for each type using the C extension
-      type_counts.each do |count|
-        positions = TypeBalancer::Distributor.calculate_target_positions(
-          total_count,
-          count,
-          0.2
-        )
-        target_positions << positions
+      # Calculate ratios based on type order
+      ratios = case @types.size
+               when 0 then []
+               when 1 then [1.0]
+               when 2 then [0.6, 0.4]
+               else
+                 first_ratio = 0.35
+                 remaining_ratio = (1.0 - first_ratio) / (@types.size - 1)
+                 [first_ratio] + Array.new(@types.size - 1, remaining_ratio)
+               end
+
+      # Calculate positions for each type
+      @types.each_with_index do |type, index|
+        items = items_by_type[type] || []
+        ratio = ratios[index]
+        # Calculate positions relative to total count
+        positions = Distributor.calculate_target_positions(total_count, items.size, ratio)
+        positions_by_type[type] = positions
       end
 
       # Map items to their balanced positions
-      ordered_items = Array.new(total_count)
-      items_by_type.values.each_with_index do |items, idx|
-        current_positions = target_positions[idx] || []
-        items.each_with_index do |item, item_idx|
-          break if item_idx >= current_positions.size
+      balanced_items = Array.new(total_count)
 
-          ordered_items[current_positions[item_idx]] = item
+      # Process types in order
+      @types.each do |type|
+        items = items_by_type[type] || []
+        positions = positions_by_type[type] || []
+
+        items.each_with_index do |item, index|
+          pos = positions[index]
+          next unless pos && pos < total_count && balanced_items[pos].nil?
+
+          balanced_items[pos] = item
         end
       end
 
-      # Fill in any gaps
-      ordered_items.compact
+      # Fill any gaps with remaining items
+      remaining_items = @collection.reject { |item| balanced_items.include?(item) }
+      remaining_items.each do |item|
+        empty_pos = balanced_items.index(nil)
+        break unless empty_pos
+
+        balanced_items[empty_pos] = item
+      end
+
+      balanced_items.compact
+    end
+
+    private
+
+    def get_type(item)
+      if item.respond_to?(@type_field)
+        item.send(@type_field)
+      elsif item.respond_to?(:[])
+        item[@type_field] || item[@type_field.to_s]
+      else
+        raise Error, "Cannot access type field '#{@type_field}' on item #{item}"
+      end
+    end
+
+    def extract_types
+      # Get unique types in the order they appear in the collection
+      types = @collection.map { |item| get_type(item) }.uniq
+      # Sort types to ensure consistent order: video, image, article
+      default_order = %w[video image article]
+      types.sort_by { |type| default_order.index(type) || types.size }
     end
   end
 
   def self.balance(collection, type_field: :type, type_order: nil)
     if use_c_extensions?
-      CBalancer.new(collection, type_field, type_order || extract_types(collection, type_field)).balance
+      CBalancer.new(collection, type_field, type_order).balance
     else
       Balancer.new(collection, type_field: type_field, types: type_order).call
     end
   end
 
   def self.extract_types(collection, type_field)
-    collection.map { |item| item[type_field] || item[type_field.to_s] }.uniq
+    collection.map do |item|
+      if item.respond_to?(type_field)
+        item.send(type_field)
+      elsif item.respond_to?(:[])
+        item[type_field] || item[type_field.to_s]
+      else
+        raise Error, "Cannot access type field '#{type_field}' on item #{item}"
+      end
+    end.uniq
   end
 
   # Your code goes here...

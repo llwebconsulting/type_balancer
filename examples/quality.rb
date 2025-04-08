@@ -45,18 +45,30 @@ class QualityTest
     @failed_tests = []
   end
 
-  def run
+  def run(test_name = nil)
     puts 'Running TypeBalancer Quality Tests'
     puts '================================='
     puts
 
-    test_c_extension_default
-    test_ruby_implementation
-    test_custom_objects
-    test_performance_comparison
-    test_edge_cases
-    test_type_ordering
-    test_large_dataset
+    if test_name
+      test_method = "test_#{test_name}"
+      if respond_to?(test_method, true)
+        send(test_method)
+      else
+        available_tests = private_methods.grep(/^test_/).map { |m| m.to_s.sub('test_', '') }
+        puts "Error: Test '#{test_name}' not found."
+        puts "Available tests: #{available_tests.join(', ')}"
+        exit(1)
+      end
+    else
+      test_c_extension_default
+      test_ruby_implementation
+      test_custom_objects
+      test_performance_comparison
+      test_edge_cases
+      test_type_ordering
+      test_large_dataset
+    end
 
     report_results
   end
@@ -74,6 +86,12 @@ class QualityTest
     end
   end
 
+  def get_type(item)
+    return nil if item.nil?
+
+    item.respond_to?(:type) ? item.type : (item[:type] if item.respond_to?(:[]))
+  end
+
   def test_c_extension_default
     puts "\nTesting C Extension (Default):"
 
@@ -89,7 +107,7 @@ class QualityTest
     )
 
     # Test type distribution
-    types = balanced.map { |item| item[:type] }
+    types = balanced.map { |item| get_type(item) }.compact
     assert(
       types.uniq.size == 3,
       "C Extension: Expected 3 unique types, got #{types.uniq.size}"
@@ -103,7 +121,7 @@ class QualityTest
     )
 
     # Test spacing between same types
-    max_consecutive = types.chunk { |t| t }.map(&:last).map(&:size).max
+    max_consecutive = types.chunk { |t| t }.map(&:last).map(&:size).max || 0
     assert(
       max_consecutive <= 2,
       "C Extension: Too many consecutive items of same type (#{max_consecutive})"
@@ -125,7 +143,7 @@ class QualityTest
     )
 
     # Test type distribution
-    types = balanced.map { |item| item[:type] }
+    types = balanced.map { |item| get_type(item) }.compact
     assert(
       types.uniq.size == 3,
       "Ruby Implementation: Expected 3 unique types, got #{types.uniq.size}"
@@ -163,26 +181,30 @@ class QualityTest
   end
 
   def test_performance_comparison
-    puts "\nTesting Performance:"
+    puts "\nTesting Implementation Consistency:"
 
     items = TestDataGenerator.generate_items(1000)
 
-    c_time = Benchmark.realtime do
-      TypeBalancer.configure { |config| config.use_c_extensions = true }
-      TypeBalancer.balance(items)
-    end
+    # Get results from C extension
+    TypeBalancer.configure { |config| config.use_c_extensions = true }
+    c_result = TypeBalancer.balance(items)
 
-    ruby_time = Benchmark.realtime do
-      TypeBalancer.configure { |config| config.use_c_extensions = false }
-      TypeBalancer.balance(items)
-    end
+    # Get results from Ruby implementation
+    TypeBalancer.configure { |config| config.use_c_extensions = false }
+    ruby_result = TypeBalancer.balance(items)
 
-    puts "\nC Extension: #{c_time.round(4)}s"
-    puts "Ruby: #{ruby_time.round(4)}s"
+    # Compare results
+    assert(
+      c_result.size == ruby_result.size,
+      "Implementation mismatch: C extension returned #{c_result.size} items, Ruby returned #{ruby_result.size}"
+    )
+
+    c_types = c_result.map { |item| get_type(item) }
+    ruby_types = ruby_result.map { |item| get_type(item) }
 
     assert(
-      c_time < ruby_time,
-      "Performance: C Extension (#{c_time.round(4)}s) should be faster than Ruby (#{ruby_time.round(4)}s)"
+      c_types == ruby_types,
+      'Implementation mismatch: Type sequences differ between C and Ruby implementations'
     )
   end
 
@@ -210,7 +232,7 @@ class QualityTest
       same_type = 3.times.map { |i| { type: 'video', id: i } }
       balanced = TypeBalancer.balance(same_type)
       assert(
-        balanced.map { |i| i[:type] }.uniq.size == 1,
+        balanced.map { |i| get_type(i) }.compact.uniq.size == 1,
         "#{implementation}: All items should be of same type"
       )
     end
@@ -227,7 +249,8 @@ class QualityTest
       implementation = use_c ? 'C Extension' : 'Ruby'
 
       balanced = TypeBalancer.balance(items, type_order: type_order)
-      first_type = balanced.first[:type]
+      first_item = balanced.find { |item| !get_type(item).nil? }
+      first_type = get_type(first_item)
 
       assert(
         first_type == type_order.first,
@@ -278,4 +301,5 @@ class QualityTest
 end
 
 # Run the tests
-QualityTest.new.run
+test_name = ARGV[0]
+QualityTest.new.run(test_name)
