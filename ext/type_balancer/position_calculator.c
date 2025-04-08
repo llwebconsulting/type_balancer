@@ -1,5 +1,7 @@
 #include "position_calculator.h"
+#include "function_exports.h"
 #include <ruby.h>
+#include <ruby/thread.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -89,4 +91,56 @@ void free_position_result(PositionResult* result) {
         result->positions = NULL;
         result->count = 0;
     }
+}
+
+// Function to calculate positions in batch mode
+int calculate_positions_batch(struct position_batch* batch, int iterations, long* positions, int* result_size) {
+    if (!batch || !positions || !result_size) return -1;
+    
+    // Input validation
+    if (batch->total_count <= 0 || batch->available_count <= 0 || 
+        batch->ratio <= 0 || batch->ratio > 1 ||
+        batch->available_count > batch->total_count) {
+        *result_size = 0;
+        return 0;
+    }
+
+    // Calculate target count
+    long target_count = ceil(batch->total_count * batch->ratio);
+    target_count = target_count < batch->available_count ? target_count : batch->available_count;
+
+    // Special cases
+    if (target_count == 0) {
+        *result_size = 0;
+        return 0;
+    }
+    if (target_count == 1) {
+        positions[0] = 0;
+        *result_size = 1;
+        return 0;
+    }
+
+    // Calculate spacing
+    double spacing = (double)batch->total_count / target_count;
+    
+    // Process all iterations
+    for (int iter = 0; iter < iterations; iter++) {
+        // Generate positions
+        for (long i = 0; i < target_count; i++) {
+            // Calculate ideal position
+            double ideal_pos = i * spacing;
+            
+            // Round to nearest integer
+            long pos = (long)round(ideal_pos);
+            
+            // Ensure bounds
+            if (pos >= batch->total_count) pos = batch->total_count - 1;
+            if (pos < 0) pos = 0;
+            
+            positions[i] = pos;
+        }
+    }
+    
+    *result_size = target_count;
+    return 0;
 } 

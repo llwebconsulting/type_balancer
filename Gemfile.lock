@@ -7,9 +7,12 @@ GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.3)
+    benchmark (0.4.0)
     benchmark-ips (2.14.0)
     diff-lcs (1.6.1)
     docile (1.4.1)
+    ffi (1.17.1)
+    ffi (1.17.1-arm64-darwin)
     json (2.10.2)
     language_server-protocol (3.17.0.4)
     lint_roller (1.1.0)
@@ -82,7 +85,9 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  benchmark
   benchmark-ips (~> 2.12)
+  ffi
   rake (~> 13.0)
   rake-compiler (~> 1.2)
   rspec (~> 3.0)
