@@ -6,14 +6,13 @@ require 'benchmark/ips'
 require_relative '../lib/type_balancer'
 
 # Check YJIT status
-YJIT_ENABLED = begin
-  if ENV['RUBY_YJIT_ENABLE'] == '1'
-    require 'ruby_vm/yjit'
+YJIT_ENABLED = if ENV['RUBY_YJIT_ENABLE'] == '1'
+  begin
     RubyVM::YJIT.enabled?
-  else
+  rescue LoadError, NameError
     false
   end
-rescue LoadError, NameError
+else
   false
 end
 puts "YJIT Status: #{YJIT_ENABLED ? 'Enabled' : 'Not available/Disabled'}"

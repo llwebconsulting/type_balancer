@@ -18,8 +18,5 @@ unless have_header('ruby.h')
   exit 1
 end
 
-# Create Makefile for the distributor extension
-create_makefile('type_balancer/distributor', 'distributor')
-
-# Create Makefile for the balancer extension
-create_makefile('type_balancer/balancer', 'balancer')
+# Create a single Makefile for the combined extension
+create_makefile('type_balancer/type_balancer')

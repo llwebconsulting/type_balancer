@@ -30,9 +30,8 @@ RUN git init && \
 # Install dependencies
 RUN bundle install
 
-# Set YJIT environment variable
-ARG RUBY_YJIT_ENABLE=0
-ENV RUBY_YJIT_ENABLE=${RUBY_YJIT_ENABLE}
+# Create necessary directory structure and compile extensions
+RUN bundle exec rake compile
 
 # Run benchmarks
-CMD ["bundle", "exec", "rake", "benchmark"] 
+CMD ["bundle", "exec", "rake", "benchmark:complete"] 
