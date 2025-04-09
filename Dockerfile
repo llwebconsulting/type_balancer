@@ -30,8 +30,14 @@ RUN git init && \
 # Install dependencies
 RUN bundle install
 
-# Create directory for compiled files
-RUN mkdir -p /app/compiled
+# Compile and install the extension
+RUN cd ext/type_balancer && \
+    ruby extconf.rb && \
+    make clean && \
+    make && \
+    make install
 
-# Don't compile during build - will be done at runtime with mounted volume
+# Set environment variable for Ruby to find native extensions
+ENV RUBYLIB=/app/lib:/app/lib/type_balancer
+
 CMD ["bundle", "exec", "rake", "benchmark:complete"] 

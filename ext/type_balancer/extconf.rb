@@ -3,29 +3,37 @@
 
 require 'mkmf'
 
-# Add CFLAGS for optimization and warnings
-$CFLAGS << ' -Wall -Wextra -O3'
-
 # Check for required headers
 have_header('ruby.h')
 have_header('ruby/thread.h')
 
-# Check for math library
-have_library('m', 'ceil')
+# Add compiler flags
+$CFLAGS << ' -Wall -Wextra -O3'
+$CFLAGS << ' -I$(srcdir)'
 
-# Create header with function exports
-File.write('function_exports.h', <<~HEADER)
-  #ifndef FUNCTION_EXPORTS_H
-  #define FUNCTION_EXPORTS_H
+# Enable SIMD optimizations where available
+if RUBY_PLATFORM =~ /x86_64|amd64/
+  $CFLAGS << ' -mavx2' if try_cflags('-mavx2')
+  $CFLAGS << ' -msse2' if try_cflags('-msse2')
+elsif RUBY_PLATFORM =~ /arm|aarch64/
+  $CFLAGS << ' -march=armv8-a+simd' if try_cflags('-march=armv8-a+simd')
+end
 
-  #include "position_calculator.h"
+# List all source files explicitly
+srcs = %w[
+  init.c
+  position_array.c
+  position_calculator.c
+  position_adjuster.c
+  sequential_filler.c
+  item_queue.c
+  alternating_filler.c
+  distributor.c
+  gap_filler.c
+  position_generator.c
+  spacing_calculator.c
+]
 
-  // Export batch processing function
-  __attribute__((visibility("default")))
-  int calculate_positions_batch(struct position_batch* batch, int iterations, long* positions, int* result_size);
-
-  #endif /* FUNCTION_EXPORTS_H */
-HEADER
-
-# Create a single Makefile for the combined extension
-create_makefile('type_balancer/type_balancer')
+# Create makefile with the correct extension name
+dir_config('type_balancer')
+create_makefile('type_balancer/native')

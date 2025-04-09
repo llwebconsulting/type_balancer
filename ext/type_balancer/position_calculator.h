@@ -14,8 +14,10 @@
 
 // Configuration for position calculation
 typedef struct {
-    long total_count;    // Total number of positions available
-    long target_count;   // Number of positions to calculate
+    double total_count;    // Total number of positions available
+    double target_count;   // Number of positions to calculate
+    double* available_positions;  // Array of available positions
+    size_t available_positions_count;  // Number of available positions
 } PositionConfig;
 
 // Result structure for position calculation
@@ -27,8 +29,8 @@ typedef struct {
 
 // Structure for batch processing
 struct position_batch {
-    long total_count;
-    long available_count;
+    double total_count;
+    double available_count;
     double ratio;
 };
 
@@ -38,7 +40,7 @@ VALUE calculate_target_positions(VALUE self, VALUE total_count, VALUE available_
 
 // Calculate target count based on total count and ratio
 // Returns calculated target count, respecting available_items limit
-long calculate_target_count(long total_count, long available_items, double target_ratio);
+double calculate_target_count(double total_count, double available_items, double target_ratio);
 
 // Calculate positions based on configuration
 PositionResult calculate_positions(const PositionConfig* config);
@@ -47,6 +49,6 @@ PositionResult calculate_positions(const PositionConfig* config);
 void free_position_result(PositionResult* result);
 
 // Batch processing function
-int calculate_positions_batch(struct position_batch* batch, int iterations, long* positions, int* result_size);
+int calculate_positions_batch(struct position_batch* batch, int iterations, double* positions, int* result_size);
 
 #endif /* USERS_ANON_GEMS_TYPE_BALANCER_EXT_TYPE_BALANCER_POSITION_CALCULATOR_H */ 

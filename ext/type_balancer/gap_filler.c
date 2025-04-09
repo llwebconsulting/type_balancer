@@ -3,12 +3,14 @@
 #include "alternating_filler.h"
 #include <ruby.h>
 
-// Most of this file can be removed since we've now separated the implementations
-// into separate files. We'll keep just the initialization function.
+// This file is now just a placeholder for future gap filling functionality.
+// All initialization has been moved to init.c.
 
-VALUE rb_mTypeBalancer;
+// Remove this commented-out line entirely
+// // VALUE rb_mTypeBalancer; // Keep if needed elsewhere, remove if not.
 
-// Initialize the type_balancer extension
+// Remove the duplicate Init function
+/*
 void Init_type_balancer(void) {
     // Create the TypeBalancer module
     rb_mTypeBalancer = rb_define_module("TypeBalancer");
@@ -19,3 +21,4 @@ void Init_type_balancer(void) {
     // Initialize the alternating filler
     Init_alternating_filler();
 } 
+*/ 

@@ -3,8 +3,12 @@
 module TypeBalancer
   # This file serves as a wrapper for the C extension gap fillers
   begin
-    # Load the main extension which includes the gap fillers
-    require 'type_balancer/type_balancer'
+    # Try loading the extension from either location
+    begin
+      require 'type_balancer/native/native'
+    rescue LoadError
+      require 'type_balancer'
+    end
     GAP_FILLERS_EXT_LOADED = true
   rescue LoadError => e
     # Don't provide a fallback - the C extension is required

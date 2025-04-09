@@ -1,9 +1,17 @@
 # frozen_string_literal: true
 
-require_relative 'type_balancer/version'
+require 'type_balancer/version'
+require 'type_balancer/ruby/calculator'
+
+begin
+  require 'type_balancer/native/native'
+rescue LoadError
+  warn 'Native extension not available, falling back to pure Ruby implementation'
+end
 
 module TypeBalancer
   class Error < StandardError; end
+  class ConfigurationError < Error; end
 
   class Configuration
     attr_accessor :use_c_extensions
@@ -14,39 +22,93 @@ module TypeBalancer
   end
 
   class << self
+    attr_reader :implementation_mode
+
+    def configure
+      yield self if block_given?
+    end
+
+    def implementation_mode=(mode)
+      mode = mode.to_sym
+      unless %i[hybrid pure_ruby pure_c native_struct].include?(mode)
+        raise ArgumentError,
+              "Invalid implementation mode: #{mode}. Must be :hybrid, :pure_ruby, :pure_c, or :native_struct"
+      end
+
+      if %i[pure_c native_struct].include?(mode)
+        begin
+          require 'type_balancer/native'
+        rescue LoadError => e
+          raise LoadError, "C implementation (#{mode}) not available: #{e.message}"
+        end
+      end
+
+      @implementation_mode = mode
+    end
+
+    def calculate_positions(total_count:, ratio:, available_items: nil)
+      case implementation_mode
+      when :pure_c
+        require 'type_balancer/native' unless defined?(TypeBalancer::Native)
+        Native.calculate_positions(
+          total_count,
+          ratio,
+          available_items
+        )
+      when :native_struct
+        require 'type_balancer/native' unless defined?(TypeBalancer::Native)
+        Native.calculate_positions_native(
+          total_count,
+          ratio,
+          available_items
+        )
+      when :pure_ruby
+        Ruby::Calculator.calculate_positions(
+          total_count: total_count,
+          ratio: ratio,
+          available_items: available_items
+        )
+      else # :hybrid (default)
+        begin
+          require 'type_balancer/native'
+          Native.calculate_positions(
+            total_count,
+            ratio,
+            available_items
+          )
+        rescue LoadError
+          Ruby::Calculator.calculate_positions(
+            total_count: total_count,
+            ratio: ratio,
+            available_items: available_items
+          )
+        end
+      end
+    rescue ArgumentError => e
+      raise ValidationError, e.message
+    end
+
     def configuration
       @configuration ||= Configuration.new
     end
 
-    def configure
-      yield(configuration) if block_given?
-    end
-
     def use_c_extensions?
-      # Check if C extensions are actually available
-      return false unless configuration.use_c_extensions
-
-      begin
-        require 'type_balancer/distributor'
-        require 'type_balancer/balancer'
-        true
-      rescue LoadError
-        false
-      end
+      configuration.use_c_extensions && implementation_mode != :pure_ruby
     end
   end
-end
 
-# Now load Ruby implementations
-require_relative 'type_balancer/distribution_calculator'
-require_relative 'type_balancer/ordered_collection_manager'
-require_relative 'type_balancer/gap_fillers_ext'
-require_relative 'type_balancer/alternating_filler'
-require_relative 'type_balancer/sequential_filler'
-require_relative 'type_balancer/balancer'
-require_relative 'type_balancer/distributor'
+  # Set default implementation mode
+  @implementation_mode = :hybrid
 
-module TypeBalancer
+  # Now load Ruby implementations
+  require_relative 'type_balancer/distribution_calculator'
+  require_relative 'type_balancer/ordered_collection_manager'
+  require_relative 'type_balancer/gap_fillers_ext'
+  require_relative 'type_balancer/alternating_filler'
+  require_relative 'type_balancer/sequential_filler'
+  require_relative 'type_balancer/balancer'
+  require_relative 'type_balancer/distributor'
+
   # C extension-based balancer
   class CBalancer
     def initialize(collection, type_field, types = nil)
@@ -153,6 +215,12 @@ module TypeBalancer
       end
     end.uniq
   end
+
+  # Error raised when input validation fails
+  class ValidationError < StandardError; end
+
+  # Error raised when memory allocation fails
+  class MemoryError < StandardError; end
 
   # Your code goes here...
 end

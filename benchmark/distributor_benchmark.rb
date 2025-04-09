@@ -5,112 +5,142 @@ require 'bundler/setup'
 require 'benchmark'
 require 'benchmark/ips'
 require_relative '../lib/type_balancer'
+require_relative '../lib/type_balancer/ruby/batch_calculator'
 
-# Check YJIT status
-YJIT_ENABLED = if ENV['RUBY_YJIT_ENABLE'] == '1'
-  begin
-    RubyVM::YJIT.enabled?
-  rescue LoadError, NameError
-    false
+# Check if YJIT is enabled
+puts "YJIT enabled: #{RubyVM::YJIT.enabled? rescue false}"
+
+# Define native C API module/class
+C_NATIVE_API = TypeBalancer::Native rescue nil
+
+# Test cases with varying sizes and ratios
+TEST_CASES = [
+  { total_count: 10, available_items: 5, ratio: 0.2 },
+  { total_count: 1_000, available_items: 200, ratio: 0.5 },
+  { total_count: 100_000, available_items: 20_000, ratio: 0.2 },
+  { total_count: 1_000_000, available_items: 200_000, ratio: 0.1 },
+  { total_count: 10_000_000, available_items: 2_000_000, ratio: 0.05 },
+  { total_count: 100_000_000, available_items: 20_000_000, ratio: 0.01 }
+]
+
+def validate_ruby_array(arr, total_count)
+  arr.all? { |pos| pos.is_a?(Integer) && pos >= 0 && pos < total_count }
+end
+
+def validate_native_array(arr, total_count)
+  return false unless arr.is_a?(TypeBalancer::PositionArray)
+  return false unless arr.respond_to?(:size) && arr.size > 0
+
+  # Check each position is within bounds
+  (0...arr.size).all? do |i|
+    pos = arr[i]
+    pos.is_a?(Integer) && pos >= 0 && pos < total_count
   end
-else
+rescue StandardError
   false
 end
-puts "YJIT Status: #{YJIT_ENABLED ? 'Enabled' : 'Not available/Disabled'}"
 
-# Test cases with different sizes and ratios
-TEST_CASES = [
-  { total: 10, available: 5, ratio: 0.2 },
-  { total: 10, available: 5, ratio: 0.5 },
-  { total: 1_000, available: 200, ratio: 0.2 },
-  { total: 1_000, available: 200, ratio: 0.5 },
-  { total: 100_000, available: 20_000, ratio: 0.2 },
-  { total: 100_000, available: 20_000, ratio: 0.5 }
-].freeze
-
-def validate_basic(positions, total_count)
-  return false if positions.nil? || positions.empty?
-  return false if positions.any? { |pos| pos >= total_count }
-  true
-end
-
-def run_benchmark(test_case)
-  # Create calculators outside the benchmark loop
-  c_calculator = TypeBalancer::DistributionCalculator.new(test_case[:ratio])
-  ruby_calculator = TypeBalancer::Distributor
-
-  # Warm up the cache and JIT
-  10.times do
-    c_calculator.calculate_target_positions(test_case[:total], test_case[:available])
-    ruby_calculator.calculate_target_positions(test_case[:total], test_case[:available], test_case[:ratio])
-  end
+def run_benchmark
+  puts "\nRunning benchmarks..."
   
-  GC.start # Clean up before benchmarking
+  TEST_CASES.each do |test_case|
+    puts "\nBenchmarking with total_count=#{test_case[:total_count]}, ratio=#{test_case[:ratio]}"
+    
+    # Create calculators/modules
+    c_calculator = TypeBalancer::DistributionCalculator.new(test_case[:ratio])
+    ruby_calculator = TypeBalancer::Ruby::Calculator
+    batch_calculator = TypeBalancer::Ruby::BatchCalculator
+    
+    # Create batch configuration
+    batch = TypeBalancer::Ruby::BatchCalculator::PositionBatch.new(
+      total_count: test_case[:total_count],
+      available_count: test_case[:available_items],
+      ratio: test_case[:ratio]
+    )
 
-  # Quick validation before benchmarking - just check for error cases
-  c_result = c_calculator.calculate_target_positions(
-    test_case[:total],
-    test_case[:available]
-  )
-  ruby_result = ruby_calculator.calculate_target_positions(
-    test_case[:total],
-    test_case[:available],
-    test_case[:ratio]
-  )
-
-  unless validate_basic(c_result, test_case[:total]) && validate_basic(ruby_result, test_case[:total])
-    puts "\nSkipping benchmark for total_count: #{test_case[:total]}, ratio: #{test_case[:ratio]} - invalid results detected"
-    return
-  end
-
-  puts "\nBenchmarking with total_count: #{test_case[:total]}, " \
-       "available_items: #{test_case[:available]}, ratio: #{test_case[:ratio]}"
-
-  Benchmark.bm(20) do |x|
-    x.report('C Extension:') do
-      100.times do
-        c_calculator.calculate_target_positions(
-          test_case[:total],
-          test_case[:available]
-        )
+    # Warm up cache and JIT
+    10.times do
+      c_calculator.calculate_target_positions(test_case[:total_count], test_case[:available_items])
+      ruby_calculator.calculate_positions(total_count: test_case[:total_count], ratio: test_case[:ratio])
+      batch_calculator.calculate_positions_batch(batch)
+      if C_NATIVE_API
+        target_count = (test_case[:total_count] * test_case[:ratio]).to_i
+        target_count = test_case[:available_items] if target_count > test_case[:available_items]
+        C_NATIVE_API.calculate_positions_native(target_count, test_case[:available_items])
       end
     end
 
-    x.report('Pure Ruby:') do
-      100.times do
-        ruby_calculator.calculate_target_positions(
-          test_case[:total],
-          test_case[:available],
-          test_case[:ratio]
-        )
+    # Run time-based benchmark
+    puts "\nTime-based benchmark (100 iterations):"
+    Benchmark.bm(25) do |bm|
+      bm.report("C Extension (Array)") do
+        100.times { c_calculator.calculate_target_positions(test_case[:total_count], test_case[:available_items]) }
+      end
+
+      bm.report("Pure Ruby") do
+        100.times { ruby_calculator.calculate_positions(total_count: test_case[:total_count], ratio: test_case[:ratio]) }
+      end
+
+      bm.report("Ruby Batch") do
+        batch_calculator.calculate_positions_batch(batch, 100)
+      end
+
+      if C_NATIVE_API
+        bm.report("C Native (Struct)") do
+          100.times do
+            target_count = (test_case[:total_count] * test_case[:ratio]).to_i
+            target_count = test_case[:available_items] if target_count > test_case[:available_items]
+            C_NATIVE_API.calculate_positions_native(target_count, test_case[:available_items])
+          end
+        end
       end
     end
-  end
 
-  puts "\nBenchmark IPS (iterations per second):"
-  Benchmark.ips do |x|
-    x.config(time: 5, warmup: 5) # Increased warmup time
+    # Run iterations per second benchmark
+    puts "\nIterations per second benchmark (5s runtime, 5s warmup):"
+    Benchmark.ips do |bm|
+      bm.config(time: 5, warmup: 5)
 
-    x.report("C Extension#{YJIT_ENABLED ? ' (YJIT)' : ''}") do
-      c_calculator.calculate_target_positions(
-        test_case[:total],
-        test_case[:available]
-      )
+      bm.report("C Extension (Array)") do
+        c_calculator.calculate_target_positions(test_case[:total_count], test_case[:available_items])
+      end
+
+      bm.report("Pure Ruby") do
+        ruby_calculator.calculate_positions(total_count: test_case[:total_count], ratio: test_case[:ratio])
+      end
+
+      bm.report("Ruby Batch") do
+        batch_calculator.calculate_positions_batch(batch)
+      end
+
+      if C_NATIVE_API
+        bm.report("C Native (Struct)") do
+          target_count = (test_case[:total_count] * test_case[:ratio]).to_i
+          target_count = test_case[:available_items] if target_count > test_case[:available_items]
+          C_NATIVE_API.calculate_positions_native(target_count, test_case[:available_items])
+        end
+      end
+
+      bm.compare!
     end
 
-    x.report("Pure Ruby#{YJIT_ENABLED ? ' (YJIT)' : ''}") do
-      ruby_calculator.calculate_target_positions(
-        test_case[:total],
-        test_case[:available],
-        test_case[:ratio]
-      )
+    # Validate results
+    c_result = c_calculator.calculate_target_positions(test_case[:total_count], test_case[:available_items])
+    ruby_result = ruby_calculator.calculate_positions(total_count: test_case[:total_count], ratio: test_case[:ratio])
+    batch_result = batch_calculator.calculate_positions_batch(batch)
+    native_result = nil
+    if C_NATIVE_API
+      target_count = (test_case[:total_count] * test_case[:ratio]).to_i
+      target_count = test_case[:available_items] if target_count > test_case[:available_items]
+      native_result = C_NATIVE_API.calculate_positions_native(target_count, test_case[:available_items])
     end
 
-    x.compare!
+    puts "\nValidation:"
+    puts "C Extension (Array): #{validate_ruby_array(c_result, test_case[:total_count])}"
+    puts "Pure Ruby: #{validate_ruby_array(ruby_result, test_case[:total_count])}"
+    puts "Ruby Batch: #{validate_ruby_array(batch_result, test_case[:total_count])}"
+    puts "C Native (Struct): #{validate_native_array(native_result, test_case[:total_count])}" if C_NATIVE_API
   end
 end
 
-puts 'Running benchmarks...'
-TEST_CASES.each do |test_case|
-  run_benchmark(test_case)
-end
+run_benchmark

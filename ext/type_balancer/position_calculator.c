@@ -14,21 +14,39 @@
 #endif
 
 // Calculate target count based on total count and ratio
-long calculate_target_count(long total_count, long available_items, double target_ratio) {
-    if (total_count <= 0 || available_items <= 0 || target_ratio <= 0.0 || target_ratio > 1.0) {
+double calculate_target_count(double total_count, double available_items, double target_ratio) {
+    if (total_count <= 0 || available_items <= 0 || target_ratio < 0 || target_ratio > 1) {
         return 0;
     }
-    
+
     double target = total_count * target_ratio;
-    long result = (long)round(target);
-    return result > available_items ? available_items : result;
+    return target > available_items ? available_items : target;
+}
+
+// Find closest available position to target
+static double find_closest_position(double target, const double* available_positions, size_t count) {
+    if (!available_positions || count == 0) return target;
+    
+    double closest = available_positions[0];
+    double min_distance = fabs(target - closest);
+    
+    for (size_t i = 1; i < count; i++) {
+        double distance = fabs(target - available_positions[i]);
+        if (distance < min_distance) {
+            min_distance = distance;
+            closest = available_positions[i];
+        }
+    }
+    
+    return closest;
 }
 
 // Calculate positions using SIMD when available
 PositionResult calculate_positions(const PositionConfig* config) {
     PositionResult result = {NULL, 0, POSITION_INVALID_INPUT};
     
-    if (!config || config->total_count <= 0 || config->target_count <= 0) {
+    if (!config || config->total_count <= 0 || config->target_count <= 0 ||
+        !config->available_positions || config->available_positions_count == 0) {
         return result;
     }
     
@@ -38,46 +56,14 @@ PositionResult calculate_positions(const PositionConfig* config) {
         return result;
     }
     
-    double spacing = (double)config->total_count / (double)config->target_count;
-    double current = spacing / 2.0;
+    double total_space = (double)config->total_count - 1.0;
+    double target_spacing = total_space / (double)(config->target_count - 1);
     
-#ifdef __AVX2__
-    // Process 4 positions at a time using AVX2
-    const int simd_width = 4;
-    __m256d vec_spacing = _mm256_set1_pd(spacing);
-    __m256d vec_current = _mm256_set_pd(current + spacing * 3, current + spacing * 2,
-                                       current + spacing, current);
-    
-    int i;
-    for (i = 0; i + simd_width <= config->target_count; i += simd_width) {
-        _mm256_storeu_pd(&result.positions[i], vec_current);
-        vec_current = _mm256_add_pd(vec_current, _mm256_set1_pd(spacing * simd_width));
-    }
-    
-    // Handle remaining positions
-    current += spacing * i;
-#elif defined(__ARM_NEON)
-    // Process 2 positions at a time using NEON
-    const int simd_width = 2;
-    float64x2_t vec_spacing = vdupq_n_f64(spacing);
-    float64x2_t vec_current = vsetq_lane_f64(current + spacing, vdupq_n_f64(current), 1);
-    
-    int i;
-    for (i = 0; i + simd_width <= config->target_count; i += simd_width) {
-        vst1q_f64(&result.positions[i], vec_current);
-        vec_current = vaddq_f64(vec_current, vmulq_n_f64(vec_spacing, simd_width));
-    }
-    
-    // Handle remaining positions
-    current += spacing * i;
-#else
-    int i = 0;
-#endif
-    
-    // Handle remaining positions
-    for (; i < config->target_count; i++) {
-        result.positions[i] = current;
-        current += spacing;
+    for (long i = 0; i < config->target_count; i++) {
+        double target_position = i * target_spacing;
+        result.positions[i] = find_closest_position(target_position, 
+                                                  config->available_positions,
+                                                  config->available_positions_count);
     }
     
     result.count = config->target_count;
@@ -94,53 +80,76 @@ void free_position_result(PositionResult* result) {
 }
 
 // Function to calculate positions in batch mode
-int calculate_positions_batch(struct position_batch* batch, int iterations, long* positions, int* result_size) {
-    if (!batch || !positions || !result_size) return -1;
-    
-    // Input validation
-    if (batch->total_count <= 0 || batch->available_count <= 0 || 
-        batch->ratio <= 0 || batch->ratio > 1 ||
-        batch->available_count > batch->total_count) {
-        *result_size = 0;
-        return 0;
+int calculate_positions_batch(struct position_batch* batch, int iterations, double* positions, int* result_size) {
+    if (!batch || !positions || !result_size || iterations <= 0) {
+        return POSITION_INVALID_INPUT;
     }
 
-    // Calculate target count
-    long target_count = ceil(batch->total_count * batch->ratio);
-    target_count = target_count < batch->available_count ? target_count : batch->available_count;
+    *result_size = 0;
+    for (int i = 0; i < iterations; i++) {
+        double target = calculate_target_count(batch[i].total_count, batch[i].available_count, batch[i].ratio);
+        if (target <= 0) continue;
 
-    // Special cases
-    if (target_count == 0) {
-        *result_size = 0;
-        return 0;
-    }
-    if (target_count == 1) {
-        positions[0] = 0;
-        *result_size = 1;
-        return 0;
-    }
+        PositionConfig config = {
+            .total_count = batch[i].total_count,
+            .target_count = target,
+            .available_positions = NULL,
+            .available_positions_count = 0
+        };
 
-    // Calculate spacing
-    double spacing = (double)batch->total_count / target_count;
-    
-    // Process all iterations
-    for (int iter = 0; iter < iterations; iter++) {
-        // Generate positions
-        for (long i = 0; i < target_count; i++) {
-            // Calculate ideal position
-            double ideal_pos = i * spacing;
-            
-            // Round to nearest integer
-            long pos = (long)round(ideal_pos);
-            
-            // Ensure bounds
-            if (pos >= batch->total_count) pos = batch->total_count - 1;
-            if (pos < 0) pos = 0;
-            
-            positions[i] = pos;
+        PositionResult result = calculate_positions(&config);
+        if (result.error_code != POSITION_SUCCESS) {
+            free_position_result(&result);
+            return result.error_code;
         }
+
+        // Copy positions to output array
+        for (size_t j = 0; j < result.count; j++) {
+            positions[*result_size + j] = result.positions[j];
+        }
+        *result_size += (int)result.count;
+
+        free_position_result(&result);
     }
-    
-    *result_size = target_count;
-    return 0;
+
+    return POSITION_SUCCESS;
+}
+
+// Ruby interface
+VALUE calculate_target_positions(VALUE self, VALUE total_count, VALUE available_count) {
+    (void)self; // Unused parameter
+
+    Check_Type(total_count, T_FIXNUM);
+    Check_Type(available_count, T_FIXNUM);
+
+    double total = (double)FIX2LONG(total_count);
+    double available = (double)FIX2LONG(available_count);
+    double target = calculate_target_count(total, available, 0.5); // Using 0.5 as default ratio
+
+    PositionConfig config = {
+        .total_count = total,
+        .target_count = target,
+        .available_positions = NULL,
+        .available_positions_count = 0
+    };
+
+    PositionResult result = calculate_positions(&config);
+    if (result.error_code != POSITION_SUCCESS) {
+        free_position_result(&result);
+        rb_raise(rb_eRuntimeError, "Failed to calculate positions");
+        return Qnil;
+    }
+
+    VALUE positions = rb_ary_new2((long)result.count);
+    for (size_t i = 0; i < result.count; i++) {
+        rb_ary_push(positions, DBL2NUM(result.positions[i]));
+    }
+
+    free_position_result(&result);
+    return positions;
+}
+
+void Init_position_calculator(void) {
+    VALUE mTypeBalancer = rb_define_module("TypeBalancer");
+    rb_define_singleton_method(mTypeBalancer, "calculate_target_positions", calculate_target_positions, 2);
 } 

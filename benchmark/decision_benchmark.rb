@@ -8,16 +8,16 @@ require 'ffi'
 
 # Print Ruby and YJIT information
 puts "Ruby version: #{RUBY_VERSION}"
-puts "YJIT enabled: #{defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?}"
+puts "YJIT enabled: #{RubyVM::YJIT.enabled? rescue false}"
 puts
 
 # Test cases representing real-world scenarios
 TEST_CASES = [
-  { name: 'Tiny (Blog posts)', total: 100, available: 20, ratio: 0.2 },
-  { name: 'Small (Product catalog)', total: 1_000, available: 200, ratio: 0.2 },
-  { name: 'Medium (E-commerce inventory)', total: 10_000, available: 2_000, ratio: 0.2 },
-  { name: 'Large (User database)', total: 100_000, available: 20_000, ratio: 0.2 },
-  { name: 'Very Large (Analytics)', total: 1_000_000, available: 200_000, ratio: 0.2 }
+  { name: 'Tiny (Blog posts)', total_count: 100, available_items: 20 },
+  { name: 'Small (Product catalog)', total_count: 1_000, available_items: 200 },
+  { name: 'Medium (E-commerce inventory)', total_count: 10_000, available_items: 2_000 },
+  { name: 'Large (User database)', total_count: 100_000, available_items: 20_000 },
+  { name: 'Very Large (Analytics)', total_count: 1_000_000, available_items: 200_000 }
 ].freeze
 
 # Different ratios to test
@@ -29,18 +29,19 @@ module DirectCCalculator
   ffi_lib File.expand_path('../../lib/type_balancer/type_balancer.bundle', __FILE__)
   
   class PositionBatch < FFI::Struct
-    layout :total_count, :long,
-           :available_count, :long,
-           :ratio, :double
+    layout :ratio, :double,
+           :total_count, :long,
+           :positions, :pointer,
+           :size, :size_t
   end
   
-  attach_function :calculate_positions_batch, [:pointer, :int, :pointer, :pointer], :int
+  attach_function :calculate_positions_batch, [:pointer], :int
 end
 
 def run_benchmarks(test_case, ratio)
   puts "\nTesting #{test_case[:name]} dataset with ratio #{ratio}:"
-  puts "- Total count: #{test_case[:total]}"
-  puts "- Available items: #{test_case[:available]}"
+  puts "- Total count: #{test_case[:total_count]}"
+  puts "- Available items: #{test_case[:available_items]}\n\n"
 
   # Adjust iterations based on dataset size
   iterations = case test_case[:name]
@@ -52,89 +53,105 @@ def run_benchmarks(test_case, ratio)
                else 1_000
                end
 
-  # Initialize calculators
-  c_calculator = TypeBalancer::DistributionCalculator.new(ratio)
-  ruby_calculator = TypeBalancer::Distributor
-
-  # Prepare batch data for direct C calls
-  batch = DirectCCalculator::PositionBatch.new
-  batch[:total_count] = test_case[:total]
-  batch[:available_count] = test_case[:available]
-  batch[:ratio] = ratio
-
-  # Warmup phase
-  puts "\nWarming up..."
   warmup_iterations = [iterations / 10, 100].min
+  
+  # Warmup phase
+  puts "Warming up..."
   warmup_iterations.times do
-    c_calculator.calculate_target_positions(
-      test_case[:total],
-      test_case[:available]
+    # Ruby implementation
+    TypeBalancer.implementation = :ruby
+    TypeBalancer.calculate_positions(
+      total_count: test_case[:total_count],
+      ratio: ratio,
+      available_items: test_case[:available_items]
     )
-    ruby_calculator.calculate_target_positions(
-      test_case[:total],
-      test_case[:available],
-      ratio
+
+    # C implementation
+    TypeBalancer.implementation = :c
+    TypeBalancer.calculate_positions(
+      total_count: test_case[:total_count],
+      ratio: ratio,
+      available_items: test_case[:available_items]
     )
-    # Warmup direct C calls
-    result_size = FFI::MemoryPointer.new(:int)
-    positions = FFI::MemoryPointer.new(:long, test_case[:total])
-    DirectCCalculator.calculate_positions_batch(batch, 1, positions, result_size)
+
+    # Direct C implementation
+    positions = FFI::MemoryPointer.new(:long, test_case[:available_items])
+    batch = DirectCCalculator::PositionBatch.new
+    batch[:ratio] = ratio
+    batch[:total_count] = test_case[:total_count]
+    batch[:positions] = positions
+    batch[:size] = test_case[:available_items]
+    DirectCCalculator.calculate_positions_batch(batch)
   end
-  puts "Warmup complete."
+  puts "Warmup complete.\n\n"
 
-  # Memory usage before
-  gc_stat_before = GC.stat
+  # GC stats before benchmark
+  GC.start
+  gc_stats_before = GC.stat
 
-  results = Benchmark.bm(20) do |x|
-    x.report('Integrated C:') do
+  # Benchmark phase
+  results = Benchmark.bm do |x|
+    # Ruby implementation
+    TypeBalancer.implementation = :ruby
+    x.report("Pure Ruby:    ") do
       iterations.times do
-        c_calculator.calculate_target_positions(
-          test_case[:total],
-          test_case[:available]
+        TypeBalancer.calculate_positions(
+          total_count: test_case[:total_count],
+          ratio: ratio,
+          available_items: test_case[:available_items]
         )
       end
     end
 
-    x.report('Pure Ruby:') do
+    # C implementation
+    TypeBalancer.implementation = :c
+    x.report("Integrated C: ") do
       iterations.times do
-        ruby_calculator.calculate_target_positions(
-          test_case[:total],
-          test_case[:available],
-          ratio
+        TypeBalancer.calculate_positions(
+          total_count: test_case[:total_count],
+          ratio: ratio,
+          available_items: test_case[:available_items]
         )
       end
     end
 
-    x.report('Direct C (Batch):') do
-      # Process all iterations in a single C call
-      result_size = FFI::MemoryPointer.new(:int)
-      positions = FFI::MemoryPointer.new(:long, test_case[:total])
-      DirectCCalculator.calculate_positions_batch(batch, iterations, positions, result_size)
+    # Direct C implementation
+    x.report("Direct C:     ") do
+      iterations.times do
+        positions = FFI::MemoryPointer.new(:long, test_case[:available_items])
+        batch = DirectCCalculator::PositionBatch.new
+        batch[:ratio] = ratio
+        batch[:total_count] = test_case[:total_count]
+        batch[:positions] = positions
+        batch[:size] = test_case[:available_items]
+        DirectCCalculator.calculate_positions_batch(batch)
+      end
     end
   end
 
-  # Memory usage after
-  gc_stat_after = GC.stat
-  gc_runs = gc_stat_after[:count] - gc_stat_before[:count]
-  heap_growth = gc_stat_after[:heap_allocated_pages] - gc_stat_before[:heap_allocated_pages]
+  # GC stats after benchmark
+  gc_stats_after = GC.stat
+  gc_runs = gc_stats_after[:minor_gc_count] - gc_stats_before[:minor_gc_count]
+  heap_pages_growth = gc_stats_after[:heap_allocated_pages] - gc_stats_before[:heap_allocated_pages]
 
   puts "\nGC Statistics:"
   puts "- GC runs during benchmark: #{gc_runs}"
-  puts "- Heap pages growth: #{heap_growth}"
+  puts "- Heap pages growth: #{heap_pages_growth}\n\n"
 
   # Calculate operations per second
-  integrated_c_ops = iterations / results[0].real
-  ruby_ops = iterations / results[1].real
+  ruby_ops = iterations / results[0].real
+  c_ops = iterations / results[1].real
   direct_c_ops = iterations / results[2].real
 
-  puts "\nOperations per second:"
-  puts "- Integrated C: #{integrated_c_ops.round(2)}"
+  puts "Operations per second:"
   puts "- Pure Ruby: #{ruby_ops.round(2)}"
-  puts "- Direct C (Batch): #{direct_c_ops.round(2)}"
-  puts "\nRelative Performance:"
-  puts "- Integrated C vs Ruby: #{(integrated_c_ops/ruby_ops).round(2)}x"
-  puts "- Direct C vs Ruby: #{(direct_c_ops/ruby_ops).round(2)}x"
-  puts "- Direct C vs Integrated C: #{(direct_c_ops/integrated_c_ops).round(2)}x"
+  puts "- Integrated C: #{c_ops.round(2)}"
+  puts "- Direct C: #{direct_c_ops.round(2)}\n\n"
+
+  puts "Relative Performance:"
+  puts "- Integrated C vs Ruby: #{(c_ops / ruby_ops).round(2)}x"
+  puts "- Direct C vs Ruby: #{(direct_c_ops / ruby_ops).round(2)}x"
+  puts "- Direct C vs Integrated C: #{(direct_c_ops / c_ops).round(2)}x"
 end
 
 # Run benchmarks for each test case and ratio

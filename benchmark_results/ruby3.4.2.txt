@@ -1,11 +1,97 @@
-mkdir -p tmp/aarch64-linux/type_balancer/3.4.2
-cd tmp/aarch64-linux/type_balancer/3.4.2
-checking for ruby.h... yes
-creating Makefile
-cd -
-cd tmp/aarch64-linux/type_balancer/3.4.2
-compiling ../../../../ext/type_balancer/alternating_filler.c
-compiling ../../../../ext/type_balancer/gap_filler.c
-compiling ../../../../ext/type_balancer/item_queue.c
-compiling ../../../../ext/type_balancer/position_adjuster.c
-compiling ../../../../ext/type_balancer/position_array.c
++ cd /app
++ bundle exec ruby -I lib -I lib/type_balancer benchmark/end_to_end_benchmark.rb
+Native extension not available, falling back to pure Ruby implementation
+YJIT enabled: false
+
+Native extension loaded successfully
+
+Verifying native implementation...
+✓ Native implementation verified
+
+Running end-to-end benchmarks...
+
+Benchmarking Small Dataset (10 items)
+
+Warming up...
+
+Time-based benchmark (100 iterations):
+                                  user     system      total        real
+Native Struct Implementation  0.001557   0.000134   0.001691 (  0.001689)
+Pure Ruby Implementation      0.000439   0.002870   0.003309 (  0.003310)
+
+Iterations per second benchmark (5s runtime, 5s warmup):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+Warming up --------------------------------------
+Native Struct Implementation
+                         1.226k i/100ms
+Pure Ruby Implementation
+                         6.249k i/100ms
+Calculating -------------------------------------
+Native Struct Implementation
+                         14.085k (± 9.5%) i/s   (71.00 μs/i) -     69.882k in   5.019347s
+Pure Ruby Implementation
+                         71.684k (± 6.1%) i/s   (13.95 μs/i) -    362.442k in   5.077504s
+
+Comparison:
+Pure Ruby Implementation:    71684.2 i/s
+Native Struct Implementation:    14085.1 i/s - 5.09x  slower
+
+
+Validating results are consistent...
+Results match: true
+
+Distribution Stats:
+Video:
+  Native: 4 (40.0%)
+  Ruby: 4 (40.0%)
+Image:
+  Native: 3 (30.0%)
+  Ruby: 3 (30.0%)
+Article:
+  Native: 3 (30.0%)
+  Ruby: 3 (30.0%)
+
+Benchmarking Medium Dataset (1000 items)
+
+Warming up...
+
+Time-based benchmark (100 iterations):
+                                  user     system      total        real
+Native Struct Implementation  4.838315   0.013489   4.851804 (  4.852274)
+Pure Ruby Implementation      4.840953   0.005661   4.846614 (  4.848493)
+
+Iterations per second benchmark (5s runtime, 5s warmup):
+ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+Warming up --------------------------------------
+Native Struct Implementation
+                         2.000 i/100ms
+Pure Ruby Implementation
+                         2.000 i/100ms
+Calculating -------------------------------------
+Native Struct Implementation
+                         20.626 (± 4.8%) i/s   (48.48 ms/i) -    104.000 in   5.050102s
+Pure Ruby Implementation
+                         20.932 (± 0.0%) i/s   (47.77 ms/i) -    106.000 in   5.065334s
+
+Comparison:
+Pure Ruby Implementation:       20.9 i/s
+Native Struct Implementation:       20.6 i/s - same-ish: difference falls within error
+
+
+Validating results are consistent...
+Results match: true
+
+Distribution Stats:
+Video:
+  Native: 334 (33.4%)
+  Ruby: 334 (33.4%)
+Image:
+  Native: 333 (33.3%)
+  Ruby: 333 (33.3%)
+Article:
+  Native: 333 (33.3%)
+  Ruby: 333 (33.3%)
+
+Benchmarking Large Dataset (100000 items)
+
+Warming up...

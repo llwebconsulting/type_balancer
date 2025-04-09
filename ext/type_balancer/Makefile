@@ -12,13 +12,13 @@ NULLCMD = :
 
 #### Start of system configuration section. ####
 
-srcdir = balancer
-topdir = /Users/carl/.rbenv/versions/3.3.0/include/ruby-3.3.0
+srcdir = .
+topdir = /Users/carl/.rbenv/versions/3.4.1/include/ruby-3.4.0
 hdrdir = $(topdir)
-arch_hdrdir = /Users/carl/.rbenv/versions/3.3.0/include/ruby-3.3.0/arm64-darwin24
+arch_hdrdir = /Users/carl/.rbenv/versions/3.4.1/include/ruby-3.4.0/arm64-darwin24
 PATH_SEPARATOR = :
 VPATH = $(srcdir):$(arch_hdrdir)/ruby:$(hdrdir)/ruby
-prefix = $(DESTDIR)/Users/carl/.rbenv/versions/3.3.0
+prefix = $(DESTDIR)/Users/carl/.rbenv/versions/3.4.1
 rubysitearchprefix = $(rubylibprefix)/$(sitearch)
 rubyarchprefix = $(rubylibprefix)/$(arch)
 rubylibprefix = $(libdir)/$(RUBY_BASE_NAME)
@@ -42,6 +42,7 @@ archincludedir = $(includedir)/$(arch)
 sitearchlibdir = $(libdir)/$(sitearch)
 archlibdir = $(libdir)/$(arch)
 ridir = $(datarootdir)/$(RI_BASE_NAME)
+modular_gc_dir = $(DESTDIR)
 mandir = $(datarootdir)/man
 localedir = $(datarootdir)/locale
 libdir = $(exec_prefix)/lib
@@ -67,7 +68,7 @@ archdir = $(rubyarchdir)
 
 CC_WRAPPER = 
 CC = clang
-CXX = clang++
+CXX = clang++ -std=gnu++11
 LIBRUBY = $(LIBRUBY_SO)
 LIBRUBY_A = lib$(RUBY_SO_NAME)-static.a
 LIBRUBYARG_SHARED = -l$(RUBY_SO_NAME)
@@ -78,29 +79,31 @@ COUTFLAG = -o $(empty)
 CSRCFLAG = $(empty)
 
 RUBY_EXTCONF_H = 
-cflags   = -fdeclspec $(optflags) $(debugflags) $(warnflags)
+cflags   = $(hardenflags) -fdeclspec  $(optflags) $(debugflags) $(warnflags)
 cxxflags = 
 optflags = -O3 -fno-fast-math
 debugflags = -ggdb3
 warnflags = -Wall -Wextra -Wextra-tokens -Wdeprecated-declarations -Wdivision-by-zero -Wdiv-by-zero -Wimplicit-function-declaration -Wimplicit-int -Wpointer-arith -Wshorten-64-to-32 -Wwrite-strings -Wold-style-definition -Wmissing-noreturn -Wno-cast-function-type -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value -Wunused-variable -Wmisleading-indentation -Wundef
 cppflags = 
 CCDLFLAGS = -fno-common
-CFLAGS   = $(CCDLFLAGS) $(cflags) -fno-common -pipe -O3 -Wall -Wextra -Wno-unused-parameter -I$(srcdir) $(ARCH_FLAG)
+CFLAGS   = $(CCDLFLAGS) $(cflags) -fno-common -pipe -Wall -Wextra -O3 -I$(srcdir) $(ARCH_FLAG)
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir)
 DEFS     = 
-CPPFLAGS = -DHAVE_RUBY_H -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT $(DEFS) $(cppflags)
+CPPFLAGS = -DHAVE_RUBY_H -DHAVE_RUBY_THREAD_H -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT $(DEFS) $(cppflags)
 CXXFLAGS = $(CCDLFLAGS) -fdeclspec $(ARCH_FLAG)
-ldflags  = -L. -fstack-protector-strong -L/opt/homebrew/opt/gmp/lib
-dldflags = -L/opt/homebrew/opt/gmp/lib -Wl,-undefined,dynamic_lookup 
+ldflags  = -L. -fstack-protector-strong -L/opt/homebrew/Cellar/gmp/6.3.0/lib
+dldflags = -L/opt/homebrew/Cellar/gmp/6.3.0/lib -Wl,-undefined,dynamic_lookup 
 ARCH_FLAG = -arch arm64
 DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
 LDSHARED = $(CC) -dynamic -bundle
 LDSHAREDXX = $(CXX) -dynamic -bundle
-AR = /Library/Developer/CommandLineTools/usr/bin/ar
+POSTLINK = dsymutil $@ 2>/dev/null; { test -z '$(RUBY_CODESIGN)' || codesign -s '$(RUBY_CODESIGN)' $@; }
+AR = ar
+LD = ld
 EXEEXT = 
 
 RUBY_INSTALL_NAME = $(RUBY_BASE_NAME)
-RUBY_SO_NAME = ruby.3.3
+RUBY_SO_NAME = ruby.3.4
 RUBYW_INSTALL_NAME = 
 RUBY_VERSION_NAME = $(RUBY_BASE_NAME)-$(ruby_version)
 RUBYW_BASE_NAME = rubyw
@@ -108,7 +111,7 @@ RUBY_BASE_NAME = ruby
 
 arch = arm64-darwin24
 sitearch = $(arch)
-ruby_version = 3.3.0
+ruby_version = 3.4.0
 ruby = $(bindir)/$(RUBY_BASE_NAME)
 RUBY = $(ruby)
 BUILTRUBY = $(bindir)/$(RUBY_BASE_NAME)
@@ -128,7 +131,7 @@ TOUCH = exit >
 
 preload = 
 libpath = . $(libdir)
-LIBPATH =  -L. -L$(libdir)
+LIBPATH = -L. -L$(libdir)
 DEFFILE = 
 
 CLEANFILES = mkmf.log
@@ -137,18 +140,18 @@ DISTCLEANDIRS =
 
 extout = 
 extout_prefix = 
-target_prefix = /type_balancer
+target_prefix = 
 LOCAL_LIBS = 
 LIBS = $(LIBRUBYARG_SHARED)  -lpthread  
-ORIG_SRCS = 
+ORIG_SRCS = alternating_filler.c distributor.c gap_filler.c init.c item_queue.c position_adjuster.c position_array.c position_calculator.c position_generator.c sequential_filler.c spacing_calculator.c
 SRCS = $(ORIG_SRCS) 
-OBJS = 
-HDRS = 
+OBJS = alternating_filler.o distributor.o gap_filler.o init.o item_queue.o position_adjuster.o position_array.o position_calculator.o position_generator.o sequential_filler.o spacing_calculator.o
+HDRS = $(srcdir)/alternating_filler.h $(srcdir)/function_exports.h $(srcdir)/gap_filler.h $(srcdir)/item_queue.h $(srcdir)/position_adjuster.h $(srcdir)/position_array.h $(srcdir)/position_calculator.h $(srcdir)/position_generator.h $(srcdir)/sequential_filler.h $(srcdir)/spacing_calculator.h $(srcdir)/spacing_lookup_table.h
 LOCAL_HDRS = 
-TARGET = 
-TARGET_NAME = 
+TARGET = type_balancer
+TARGET_NAME = type_balancer
 TARGET_ENTRY = Init_$(TARGET_NAME)
-DLLIB = 
+DLLIB = $(TARGET).bundle
 EXTSTATIC = 
 STATIC_LIB = 
 
@@ -161,11 +164,11 @@ HDRDIR        = $(sitehdrdir)$(target_prefix)
 ARCHHDRDIR    = $(sitearchhdrdir)$(target_prefix)
 TARGET_SO_DIR =
 TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
-CLEANLIBS     = $(TARGET_SO).dSYM
+CLEANLIBS     = $(TARGET_SO) $(TARGET_SO:=.dSYM)
 CLEANOBJS     = $(OBJS) *.bak
-TARGET_SO_DIR_TIMESTAMP = $(TIMESTAMP_DIR)/.sitearchdir.-.type_balancer.time
+TARGET_SO_DIR_TIMESTAMP = $(TIMESTAMP_DIR)/.sitearchdir.time
 
-all:    Makefile
+all:    $(DLLIB)
 static: $(STATIC_LIB)
 .PHONY: all install static install-so install-rb
 .PHONY: clean clean-so clean-static clean-rb
@@ -189,7 +192,10 @@ distclean: clean distclean-so distclean-static distclean-rb-default distclean-rb
 realclean: distclean
 install: install-so install-rb
 
-install-so: Makefile
+install-so: $(DLLIB) $(TARGET_SO_DIR_TIMESTAMP)
+	$(INSTALL_PROG) $(DLLIB) $(RUBYARCHDIR)
+clean-static::
+	-$(Q)$(RM) $(STATIC_LIB)
 install-rb: pre-install-rb do-install-rb install-rb-default
 install-rb-default: pre-install-rb-default do-install-rb-default
 pre-install-rb: Makefile
@@ -198,8 +204,70 @@ do-install-rb:
 do-install-rb-default:
 pre-install-rb-default:
 	@$(NULLCMD)
+$(TARGET_SO_DIR_TIMESTAMP):
+	$(Q) $(MAKEDIRS) $(@D) $(RUBYARCHDIR)
+	$(Q) $(TOUCH) $@
 
 site-install: site-install-so site-install-rb
 site-install-so: install-so
 site-install-rb: install-rb
 
+.SUFFIXES: .c .m .cc .mm .cxx .cpp .o .S
+
+.cc.o:
+	$(ECHO) compiling $(<)
+	$(Q) $(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$<
+
+.cc.S:
+	$(ECHO) translating $(<)
+	$(Q) $(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -S $(CSRCFLAG)$<
+
+.mm.o:
+	$(ECHO) compiling $(<)
+	$(Q) $(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$<
+
+.mm.S:
+	$(ECHO) translating $(<)
+	$(Q) $(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -S $(CSRCFLAG)$<
+
+.cxx.o:
+	$(ECHO) compiling $(<)
+	$(Q) $(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$<
+
+.cxx.S:
+	$(ECHO) translating $(<)
+	$(Q) $(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -S $(CSRCFLAG)$<
+
+.cpp.o:
+	$(ECHO) compiling $(<)
+	$(Q) $(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$<
+
+.cpp.S:
+	$(ECHO) translating $(<)
+	$(Q) $(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -S $(CSRCFLAG)$<
+
+.c.o:
+	$(ECHO) compiling $(<)
+	$(Q) $(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$<
+
+.c.S:
+	$(ECHO) translating $(<)
+	$(Q) $(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -S $(CSRCFLAG)$<
+
+.m.o:
+	$(ECHO) compiling $(<)
+	$(Q) $(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$<
+
+.m.S:
+	$(ECHO) translating $(<)
+	$(Q) $(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -S $(CSRCFLAG)$<
+
+$(TARGET_SO): $(OBJS) Makefile
+	$(ECHO) linking shared-object $(DLLIB)
+	-$(Q)$(RM) $(@)
+	$(Q) $(LDSHARED) -o $@ $(OBJS) $(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)
+	$(Q) $(POSTLINK)
+
+
+
+$(OBJS): $(HDRS) $(ruby_headers)

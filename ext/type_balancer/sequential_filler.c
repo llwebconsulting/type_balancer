@@ -19,6 +19,7 @@ static void sequential_filler_free(void *ptr) {
 }
 
 static size_t sequential_filler_memsize(const void *ptr) {
+    (void)ptr;  // Explicitly ignore the parameter
     return sizeof(sequential_filler_context);
 }
 
