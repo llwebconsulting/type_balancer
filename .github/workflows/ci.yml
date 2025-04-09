@@ -33,18 +33,13 @@ jobs:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
       
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential
-      
-      - name: Compile C extensions
-        run: bundle exec rake compile
-      
       - name: Run tests with coverage
         run: bundle exec rspec
         env:
           COVERAGE: true
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
           RUBY_YJIT_ENABLE: ${{ matrix.yjit == 'enabled' && 'true' || 'false' }}
+
       - name: Upload coverage results
         uses: actions/upload-artifact@v4
         if: always()
@@ -53,16 +48,11 @@ jobs:
           path: coverage
           retention-days: 14
 
-  c_tests:
-    name: C Tests
+  type_check:
+    name: Type Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake googletest libgtest-dev lcov clang-tidy
       
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -70,74 +60,11 @@ jobs:
           ruby-version: '3.4.2'
           bundler-cache: true
       
-      - name: Build C tests with verbose output
-        run: |
-          cd c_tests
-          mkdir -p build
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=Debug ..
-          VERBOSE=1 make
-          ls -la
+      - name: Install steep
+        run: gem install steep
       
-      - name: List test files
-        run: |
-          cd c_tests
-          find . -name "*.cpp" -o -name "*.h"
-          
-      - name: Skip coverage for now
-        run: echo "Skipping coverage generation until compilation issues are fixed"
-
-  c_lint:
-    name: C Linting
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake clang-tidy
-      
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.4.2'
-          bundler-cache: true
-      
-      - name: Run clang-tidy
-        run: |
-          mkdir -p c_tests/build
-          cd c_tests/build
-          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-          cd ../..
-          
-          # Get Ruby include paths
-          RUBY_INCLUDE_PATH=$(ruby -e "puts RbConfig::CONFIG['rubyhdrdir']")
-          RUBY_ARCH_PATH=$(ruby -e "puts RbConfig::CONFIG['rubyarchhdrdir']")
-          
-          # Run clang-tidy with proper includes
-          find ext/type_balancer -name "*.c" -o -name "*.h" | while read -r file; do
-            echo "Checking $file..."
-            clang-tidy \
-              -p=c_tests/build \
-              --extra-arg="-I${RUBY_INCLUDE_PATH}" \
-              --extra-arg="-I${RUBY_ARCH_PATH}" \
-              --extra-arg="-Ic_tests/include" \
-              --config-file=.clang-tidy \
-              "$file" 2>&1 || true  # Continue even if clang-tidy finds issues
-          done
-
-          # Check for serious errors in balancer.c specifically
-          if clang-tidy \
-            -p=c_tests/build \
-            --extra-arg="-I${RUBY_INCLUDE_PATH}" \
-            --extra-arg="-I${RUBY_ARCH_PATH}" \
-            --extra-arg="-Ic_tests/include" \
-            --config-file=.clang-tidy \
-            ext/type_balancer/balancer.c 2>&1 | grep -q "error:"; then
-            echo "Found errors in balancer.c"
-            exit 1
-          fi
+      - name: Run type check
+        run: steep check
 
   rubocop:
     name: RuboCop
