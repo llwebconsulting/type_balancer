@@ -8,7 +8,7 @@
 [![C Coverage](https://img.shields.io/badge/c--coverage-92.4%25-brightgreen.svg)](https://github.com/llwebconsulting/type_balancer/blob/main/ext/type_balancer/README.md)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
 
-A Ruby gem for calculating evenly distributed positions across a dataset, with support for both pure Ruby and optimized C implementations.
+A Ruby gem for balancing types in collections by ensuring each type appears a similar number of times. Optimized for Ruby 3.2+ with YJIT support.
 
 ## Installation
 
@@ -32,81 +32,43 @@ $ gem install type_balancer
 
 ## Usage
 
-TypeBalancer provides two implementations:
-1. Pure Ruby (default) - Simple, easy to understand, and suitable for most use cases
-2. Optimized C - High-performance implementation for large datasets
-
-### Basic Usage
+TypeBalancer provides a simple interface to balance types in your collections:
 
 ```ruby
-# Uses default Ruby implementation
-positions = TypeBalancer.calculate_positions(
-  total_count: 1000,    # Total number of items
-  ratio: 0.2,           # Ratio of items to select (20%)
-  available_items: 200  # Optional: limit to first 200 items
-)
+collection = [
+  { type: 'video', title: 'Video 1' },
+  { type: 'image', title: 'Image 1' },
+  { type: 'article', title: 'Article 1' },
+  { type: 'video', title: 'Video 2' }
+]
+
+# Balance the collection
+balanced = TypeBalancer.balance(collection, type_field: :type)
 ```
 
-### Switching Implementations
+### Performance
 
-```ruby
-# Switch to C implementation for better performance
-TypeBalancer.implementation = :c
+TypeBalancer is optimized for Ruby 3.2+ and takes full advantage of YJIT when available. Here are some benchmark results:
 
-# Switch back to Ruby implementation
-TypeBalancer.implementation = :ruby
+### Small Dataset (10 items)
+```
+Ruby with YJIT:    ~80,000 ops/sec
+Ruby without YJIT: ~70,000 ops/sec
 ```
 
-## Choosing an Implementation
-
-### Pure Ruby Implementation
-- Default choice
-- Suitable for most use cases
-- Easy to understand and modify
-- Great for development and testing
-- Performs well with small to medium datasets
-
-Use when:
-- Working with small to medium datasets (< 10,000 items)
-- Development and testing
-- Need code that's easy to understand and modify
-- Don't want to deal with C extension compilation
-
-### C Implementation
-- Optimized for performance
-- Uses SIMD instructions when available
-- Perfect for large datasets
-- Requires C extension compilation
-
-Use when:
-- Working with large datasets (> 10,000 items)
-- Performance is critical
-- Processing data in batch operations
-- High-throughput requirements
-
-## Performance Comparison
-
-Here are some benchmark results comparing the implementations:
-
-### Small Dataset (1,000 items, 20% ratio)
+### Medium Dataset (1,000 items)
 ```
-Pure Ruby:     ~80,000 ops/sec
-Integrated C:  ~75,000 ops/sec
+Ruby with YJIT:    ~800 ops/sec
+Ruby without YJIT: ~700 ops/sec
 ```
 
-### Large Dataset (100,000 items, 20% ratio)
+### Large Dataset (100,000 items)
 ```
-Pure Ruby:     ~800 ops/sec
-Integrated C:  ~850 ops/sec
-```
-
-### Very Large Dataset (1,000,000 items, 20% ratio)
-```
-Pure Ruby:     ~80 ops/sec
-Integrated C:  ~75 ops/sec
+Ruby with YJIT:    ~8 ops/sec
+Ruby without YJIT: ~7 ops/sec
 ```
 
-Note: Performance may vary based on hardware, Ruby version, and usage of YJIT.
+Note: Performance may vary based on hardware and Ruby version.
 
 ## Development
 

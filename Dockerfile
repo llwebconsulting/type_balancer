@@ -3,9 +3,7 @@ FROM ruby:${RUBY_VERSION}-slim
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
     git \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust if YJIT is enabled
@@ -19,7 +17,6 @@ WORKDIR /app
 # Copy all necessary files for building the gem
 COPY Gemfile Gemfile.lock type_balancer.gemspec Rakefile ./
 COPY lib/ lib/
-COPY ext/ ext/
 COPY sig/ sig/
 COPY benchmark/ benchmark/
 
@@ -30,14 +27,7 @@ RUN git init && \
 # Install dependencies
 RUN bundle install
 
-# Compile and install the extension
-RUN cd ext/type_balancer && \
-    ruby extconf.rb && \
-    make clean && \
-    make && \
-    make install
-
 # Set environment variable for Ruby to find native extensions
-ENV RUBYLIB=/app/lib:/app/lib/type_balancer
+ENV RUBYLIB=/app/lib
 
 CMD ["bundle", "exec", "rake", "benchmark:complete"] 

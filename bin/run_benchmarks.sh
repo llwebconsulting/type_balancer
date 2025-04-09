@@ -65,12 +65,14 @@ run_benchmarks() {
     # Create results directory if it doesn't exist
     mkdir -p benchmark_results
 
-    # Run the end-to-end benchmark
-    echo "Running end-to-end benchmark..."
+    # Run both benchmarks
+    echo "Running benchmarks..."
     if ! timeout 300 docker run --rm ${image_tag} /bin/bash -c "set -x && cd /app && \
-        bundle exec ruby -I lib -I lib/type_balancer \
-        benchmark/end_to_end_benchmark.rb" > "${result_file}" 2>&1; then
-        echo "Error: End-to-end benchmarks timed out or failed"
+        echo 'Running end-to-end benchmark...' && \
+        bundle exec ruby -I lib benchmark/end_to_end_benchmark.rb && \
+        echo '\nRunning quick benchmark...' && \
+        bundle exec ruby -I lib benchmark/quick_benchmark.rb" > "${result_file}" 2>&1; then
+        echo "Error: Benchmarks timed out or failed"
         return 1
     fi
 

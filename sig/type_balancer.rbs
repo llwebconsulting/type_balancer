@@ -1,4 +1,85 @@
 module TypeBalancer
   VERSION: String
   # See the writing guide of rbs: https://github.com/ruby/rbs#guides
+
+  class Error < StandardError
+  end
+
+  class ConfigurationError < Error
+  end
+
+  class ValidationError < Error
+  end
+
+  # Main class responsible for balancing items in a collection based on their types
+  class Balancer
+    def initialize: (Array[untyped] collection, ?type_field: Symbol | String, ?types: Array[String]?) -> void
+    def call: -> Array[untyped]
+
+    private
+    def calculate_ratios: (Hash[String, Array[untyped]] items_by_type) -> Array[Float]
+    def get_type: (untyped item) -> String
+    def extract_types: -> Array[String]
+  end
+
+  module Ruby
+    class Calculator
+      def self.calculate_positions: (total_count: Integer, ratio: Float, ?available_items: Array[Integer]?) -> Array[Integer]
+
+      private
+      def self.validate_inputs: (Integer total_count, Float ratio) -> void
+      def self.validate_available_items: (Array[Integer]? available_items, Integer total_count) -> void
+      def self.calculate_positions_without_available: (Integer total_count, Integer target_count) -> Array[Integer]
+      def self.calculate_positions_with_available: (Integer total_count, Integer target_count, Array[Integer] available_items) -> Array[Integer]
+    end
+
+    class BatchCalculator
+      class PositionBatch
+        attr_reader total_count: Integer
+        attr_reader available_count: Integer
+        attr_reader ratio: Float
+
+        def initialize: (total_count: Integer, available_count: Integer, ratio: Float) -> void
+        def valid?: -> bool
+      end
+
+      def self.calculate_positions_batch: (PositionBatch batch, ?Integer iterations) -> Array[Integer]
+      private
+      def self.calculate_target_count: (PositionBatch batch) -> Integer
+    end
+  end
+
+  class OrderedCollectionManager
+    def initialize: (Integer size) -> void
+    def place_at_positions: (Array[untyped] items, Array[Integer] positions) -> void
+    def fill_gaps_alternating: (Array[untyped] primary_items, Array[untyped] secondary_items) -> void
+    def fill_remaining_gaps: (Array[Array[untyped]] items_arrays) -> void
+    def result: -> Array[untyped]
+    private
+    def find_empty_positions: -> Array[Integer]
+  end
+
+  class SequentialFiller
+    def initialize: (Array[untyped] collection, Array[Array[untyped]] items_arrays) -> void
+    def self.fill: (Array[untyped] collection, Array[Integer] positions, Array[Array[untyped]] items_arrays) -> void
+    def fill_gaps: (Array[Integer] positions) -> void
+  end
+
+  class AlternatingFiller
+    def initialize: (Array[untyped] collection, Array[untyped] primary_items, Array[untyped] secondary_items) -> void
+    def self.fill: (Array[untyped] collection, Array[Integer] positions, Array[untyped] primary_items, Array[untyped] secondary_items) -> void
+    def fill_gaps: (Array[Integer] positions) -> void
+  end
+
+  class DistributionCalculator
+    def initialize: (?Float target_ratio) -> void
+    def calculate_target_positions: (Integer total_count, Integer available_items_count, ?Float target_ratio) -> Array[Integer]
+  end
+
+  module Distributor
+    def self.calculate_target_positions: (Integer total_count, Integer available_count, Float ratio) -> Array[Integer]
+  end
+
+  def self.balance: (Array[untyped] collection, ?type_field: Symbol | String, ?type_order: Array[String]?) -> Array[untyped]
+  def self.extract_types: (Array[untyped] collection, Symbol | String type_field) -> Array[String]
 end

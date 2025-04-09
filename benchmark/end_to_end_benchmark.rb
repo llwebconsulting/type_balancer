@@ -72,25 +72,18 @@ def run_benchmark
     # Warm up cache and JIT
     puts "\nWarming up..."
     10.times do
-      TypeBalancer.implementation_mode = :native_struct
-      TypeBalancer.balance(collection, type_field: :type)
-      
-      TypeBalancer.implementation_mode = :pure_ruby
       TypeBalancer.balance(collection, type_field: :type)
     end
 
     # Run time-based benchmark
     puts "\nTime-based benchmark (100 iterations):"
-    Benchmark.bm(25) do |bm|
-      bm.report("Native Struct Implementation") do
-        TypeBalancer.implementation_mode = :native_struct
-        100.times { TypeBalancer.balance(collection, type_field: :type) }
-      end
+    result = TypeBalancer.balance(collection, type_field: :type)
 
-      bm.report("Pure Ruby Implementation") do
-        TypeBalancer.implementation_mode = :pure_ruby
-        100.times { TypeBalancer.balance(collection, type_field: :type) }
-      end
+    # Print distribution stats
+    puts "\nDistribution Stats:"
+    %w[video image article].each do |type|
+      count = result.count { |i| i[:type] == type }
+      puts "#{type.capitalize}: #{count} (#{(count.to_f / test_case[:size] * 100).round(2)}%)"
     end
 
     # Run iterations per second benchmark
@@ -98,37 +91,9 @@ def run_benchmark
     Benchmark.ips do |bm|
       bm.config(time: 5, warmup: 5)
 
-      bm.report("Native Struct Implementation") do
-        TypeBalancer.implementation_mode = :native_struct
+      bm.report("Ruby Implementation") do
         TypeBalancer.balance(collection, type_field: :type)
       end
-
-      bm.report("Pure Ruby Implementation") do
-        TypeBalancer.implementation_mode = :pure_ruby
-        TypeBalancer.balance(collection, type_field: :type)
-      end
-
-      bm.compare!
-    end
-
-    # Validate results match
-    puts "\nValidating results are consistent..."
-    TypeBalancer.implementation_mode = :native_struct
-    native_result = TypeBalancer.balance(collection, type_field: :type)
-    
-    TypeBalancer.implementation_mode = :pure_ruby
-    ruby_result = TypeBalancer.balance(collection, type_field: :type)
-
-    puts "Results match: #{native_result.map { |i| i[:id] } == ruby_result.map { |i| i[:id] }}"
-    
-    # Print distribution stats
-    puts "\nDistribution Stats:"
-    %w[video image article].each do |type|
-      native_count = native_result.count { |i| i[:type] == type }
-      ruby_count = ruby_result.count { |i| i[:type] == type }
-      puts "#{type.capitalize}:"
-      puts "  Native: #{native_count} (#{(native_count.to_f / test_case[:size] * 100).round(2)}%)"
-      puts "  Ruby: #{ruby_count} (#{(ruby_count.to_f / test_case[:size] * 100).round(2)}%)"
     end
   end
 end
