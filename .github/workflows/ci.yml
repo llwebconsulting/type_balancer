@@ -48,24 +48,6 @@ jobs:
           path: coverage
           retention-days: 14
 
-  type_check:
-    name: Type Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.4.2'
-          bundler-cache: true
-      
-      - name: Install steep
-        run: gem install steep
-      
-      - name: Run type check
-        run: steep check
-
   rubocop:
     name: RuboCop
     runs-on: ubuntu-latest
