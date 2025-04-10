@@ -10,19 +10,11 @@ require 'rubocop/rake_task'
 
 RuboCop::RakeTask.new
 
-Rake::ExtensionTask.new('distributor') do |ext|
+Rake::ExtensionTask.new('type_balancer') do |ext|
   ext.lib_dir = 'lib/type_balancer'
   ext.ext_dir = 'ext/type_balancer'
   ext.source_pattern = '*.{c,h}'
   ext.config_options = ['--with-cflags=-Wall -Wextra -O3']
-end
-
-Rake::ExtensionTask.new('gap_fillers') do |ext|
-  ext.lib_dir = 'lib/type_balancer'
-  ext.ext_dir = 'ext/type_balancer'
-  ext.source_pattern = '*.{c,h}'
-  ext.config_options = ['--with-cflags=-Wall -Wextra -O3']
-  ext.config_script = 'gap_fillers_extconf.rb'
 end
 
 # Add GoogleTest task using CMake

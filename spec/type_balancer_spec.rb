@@ -131,4 +131,105 @@ RSpec.describe TypeBalancer do
       end
     end
   end
+
+  describe '.calculate_positions' do
+    context 'with valid inputs' do
+      before do
+        allow(TypeBalancer::PositionCalculator).to receive(:calculate_positions)
+      end
+
+      it 'delegates to PositionCalculator' do
+        described_class.calculate_positions(total_count: 10, ratio: 0.4)
+
+        expect(TypeBalancer::PositionCalculator).to have_received(:calculate_positions).with(
+          total_count: 10,
+          ratio: 0.4,
+          available_items: nil
+        )
+      end
+
+      it 'handles available items' do
+        available_items = [0, 2, 4, 6]
+        described_class.calculate_positions(
+          total_count: 10,
+          ratio: 0.4,
+          available_items: available_items
+        )
+
+        expect(TypeBalancer::PositionCalculator).to have_received(:calculate_positions).with(
+          total_count: 10,
+          ratio: 0.4,
+          available_items: available_items
+        )
+      end
+    end
+  end
+
+  describe '.extract_types' do
+    context 'with hash-like items' do
+      let(:items) do
+        [
+          { type: 'video' },
+          { type: 'image' },
+          { 'type' => 'video' } # String key
+        ]
+      end
+
+      it 'extracts unique types' do
+        expect(described_class.extract_types(items, :type)).to eq(%w[video image])
+      end
+    end
+
+    context 'with object items' do
+      let(:test_item_class) { Struct.new(:content_type) }
+      let(:items) do
+        [
+          test_item_class.new('video'),
+          test_item_class.new('image'),
+          test_item_class.new('video')
+        ]
+      end
+
+      it 'extracts types using method calls' do
+        expect(described_class.extract_types(items, :content_type)).to eq(%w[video image])
+      end
+    end
+
+    context 'with invalid items' do
+      let(:items) { [Object.new] }
+
+      it 'raises an error for inaccessible type field' do
+        expect do
+          described_class.extract_types(items, :type)
+        end.to raise_error(TypeBalancer::Error, /Cannot access type field/)
+      end
+    end
+
+    context 'with mixed access patterns' do
+      let(:test_item_class) { Struct.new(:type) }
+      let(:items) do
+        [
+          { type: 'video' },
+          test_item_class.new('image'),
+          { 'type' => 'strip' }
+        ]
+      end
+
+      it 'handles different ways of accessing the type field' do
+        expect(described_class.extract_types(items, :type)).to eq(%w[video image strip])
+      end
+    end
+  end
+
+  describe 'error handling' do
+    context 'when balancing items' do
+      let(:items) { [Object.new] }
+
+      it 'propagates errors from type extraction' do
+        expect do
+          described_class.balance(items)
+        end.to raise_error(TypeBalancer::Error, /Cannot access type field/)
+      end
+    end
+  end
 end

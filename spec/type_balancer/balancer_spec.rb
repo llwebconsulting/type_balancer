@@ -21,13 +21,13 @@ RSpec.describe TypeBalancer::Balancer do
       before do
         # Mock distribution calculator for each type
         allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(5, 2, 0.4)  # video type (primary)
+          .with(5, 2, 0.35) # video type (primary)
           .and_return([0, 3])
         allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(5, 2, 0.3)  # image type
+          .with(5, 2, 0.325)  # image type (remaining ratio = (1 - 0.35) / 2 = 0.325)
           .and_return([1, 4])
         allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(5, 1, 0.3)  # strip type
+          .with(5, 1, 0.325)  # strip type (remaining ratio = (1 - 0.35) / 2 = 0.325)
           .and_return([2])
       end
 
@@ -81,10 +81,10 @@ RSpec.describe TypeBalancer::Balancer do
 
       before do
         allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(2, 1, 0.4)
+          .with(2, 1, 0.6)  # For two types, first type gets 0.6
           .and_return([0])
         allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(2, 1, 0.3)
+          .with(2, 1, 0.4)  # For two types, second type gets 0.4
           .and_return([1])
       end
 
@@ -106,10 +106,10 @@ RSpec.describe TypeBalancer::Balancer do
 
       before do
         allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(2, 1, 0.4)
+          .with(2, 1, 0.6)  # For two types, first type gets 0.6
           .and_return([0])
         allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(2, 1, 0.3)
+          .with(2, 1, 0.4)  # For two types, second type gets 0.4
           .and_return([1])
       end
 

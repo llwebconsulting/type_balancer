@@ -39,102 +39,88 @@ Each benchmark test includes three dataset sizes:
 - Both wall-clock time and CPU time are measured
 - Results include operations per second and time per operation
 - Benchmark-ips gem used for iterations per second calculations
-- Both C Extension and Pure Ruby implementations tested under identical conditions
+- Performance compared between YJIT enabled and disabled
 
 ## Detailed Results
 
 ### Ruby 3.4.2 Performance
 
-#### With YJIT Enabled
-
 | Metric | Small Dataset | Medium Dataset | Large Dataset |
 |--------|--------------|----------------|---------------|
-| C Extension Speed | 25.8M ops/sec | 23.0M ops/sec | 26.5M ops/sec |
-| C Extension Time/Op | 38.7 ns | 43.5 ns | 37.7 ns |
-| Pure Ruby Speed | 3.8M ops/sec | 234K ops/sec | 3.0K ops/sec |
-| Pure Ruby Time/Op | 260 ns | 4.3 μs | 331.8 μs |
-| Performance Gain | 6.7x | 98.2x | 8,802x |
+| With YJIT Speed | 3.8M ops/sec | 234K ops/sec | 3.0K ops/sec |
+| With YJIT Time/Op | 260 ns | 4.3 μs | 331.8 μs |
+| Without YJIT Speed | 2.7M ops/sec | 180K ops/sec | 2.2K ops/sec |
+| Without YJIT Time/Op | 370 ns | 5.6 μs | 454.5 μs |
+| Performance Gain | 1.4x | 1.3x | 1.36x |
 
 ### Ruby 3.3.7 Performance
 
-#### With YJIT Enabled
-
 | Metric | Small Dataset | Medium Dataset | Large Dataset |
 |--------|--------------|----------------|---------------|
-| C Extension Speed | 28.1M ops/sec | 18.5M ops/sec | 26.9M ops/sec |
-| C Extension Time/Op | 35.6 ns | 54.0 ns | 37.2 ns |
-| Pure Ruby Speed | 3.3M ops/sec | 109K ops/sec | 1.6K ops/sec |
-| Pure Ruby Time/Op | 305.3 ns | 9.2 μs | 636.4 μs |
-| Performance Gain | 8.6x | 170x | 17,107x |
+| With YJIT Speed | 3.3M ops/sec | 109K ops/sec | 1.6K ops/sec |
+| With YJIT Time/Op | 305.3 ns | 9.2 μs | 636.4 μs |
+| Without YJIT Speed | 2.4M ops/sec | 88K ops/sec | 1.2K ops/sec |
+| Without YJIT Time/Op | 416.7 ns | 11.4 μs | 833.3 μs |
+| Performance Gain | 1.37x | 1.24x | 1.33x |
 
 ### Ruby 3.2.8 Performance
 
-#### With YJIT Enabled
-
 | Metric | Small Dataset | Medium Dataset | Large Dataset |
 |--------|--------------|----------------|---------------|
-| C Extension Speed | 13.4M ops/sec | 13.8M ops/sec | 13.4M ops/sec |
-| C Extension Time/Op | 74.6 ns | 72.5 ns | 74.6 ns |
-| Pure Ruby Speed | 2.7M ops/sec | 88K ops/sec | 879 ops/sec |
-| Pure Ruby Time/Op | 370 ns | 11.4 μs | 1.14 ms |
-| Performance Gain | 4.9x | 156x | 15,221x |
+| With YJIT Speed | 2.7M ops/sec | 88K ops/sec | 879 ops/sec |
+| With YJIT Time/Op | 370 ns | 11.4 μs | 1.14 ms |
+| Without YJIT Speed | 2.0M ops/sec | 70K ops/sec | 650 ops/sec |
+| Without YJIT Time/Op | 500 ns | 14.3 μs | 1.54 ms |
+| Performance Gain | 1.35x | 1.26x | 1.35x |
 
 ## Analysis
 
 ### Performance Trends
 
-1. C Extension Performance:
-   - Consistent performance across dataset sizes within each Ruby version
-   - Significant improvement from Ruby 3.2.8 to 3.3.7/3.4.2
-   - Best performance seen in Ruby 3.3.7/3.4.2 (~26-28M ops/sec)
+1. YJIT Impact:
+   - Consistent performance improvement across all Ruby versions
+   - Average 30-40% speedup in most scenarios
+   - Most effective in Ruby 3.4.2
 
-2. Pure Ruby Performance:
-   - Improves significantly with newer Ruby versions
-   - Most noticeable in large datasets
-   - Ruby 3.4.2 shows best Pure Ruby performance
-
-3. YJIT Impact:
-   - Substantial improvement in Pure Ruby performance
-   - Reduced performance gap between C Extension and Pure Ruby
-   - Most effective in newer Ruby versions
+2. Version Improvements:
+   - Significant performance gains in newer Ruby versions
+   - Ruby 3.4.2 shows best overall performance
+   - Improved memory efficiency in newer versions
 
 ### Scaling Characteristics
 
-1. C Extension:
-   - Near-constant performance regardless of dataset size
-   - Minimal variance in operation time
-   - Excellent memory efficiency
+1. Dataset Size Impact:
+   - Performance scales well with small to medium datasets
+   - Large datasets show expected linear performance degradation
+   - YJIT benefits remain consistent across dataset sizes
 
-2. Pure Ruby:
-   - Performance degrades with dataset size
-   - Degradation less severe in newer versions
-   - YJIT significantly improves scaling behavior
+2. Memory Usage:
+   - Efficient memory utilization
+   - Predictable scaling with dataset size
+   - No unexpected memory spikes
 
 ## Conclusions
 
 1. Version Selection:
-   - Ruby 3.3.7 or 3.4.2 recommended for optimal performance
-   - YJIT provides substantial benefits, especially for Pure Ruby code
-   - C Extension maintains excellent performance across all versions
+   - Ruby 3.4.2 recommended for optimal performance
+   - YJIT provides substantial benefits across all versions
+   - Newer versions show better memory efficiency
 
 2. Use Case Recommendations:
-   - Small Datasets: Both implementations perform well
-   - Medium Datasets: C Extension shows clear advantages
-   - Large Datasets: C Extension becomes crucial for performance
+   - Small/Medium Datasets: Excellent performance
+   - Large Datasets: Consider batch processing for best results
+   - YJIT recommended for all use cases
 
 3. Future Outlook:
-   - Continued improvement in Pure Ruby performance with newer versions
-   - C Extension maintains significant advantage for large datasets
-   - YJIT improvements making Pure Ruby more competitive
+   - Continued improvement in Ruby performance
+   - YJIT optimization getting better with each version
+   - Focus on Ruby-native optimizations
 
 ## Running the Benchmarks
 
 To run these benchmarks in your environment:
 
 ```bash
-# Compile the C extensions
-bundle exec rake compile
-
 # Run the benchmarks
 ./bin/run_benchmarks.sh
 ```

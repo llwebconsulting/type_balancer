@@ -1,89 +1,44 @@
 # frozen_string_literal: true
 
-require_relative 'type_balancer/version'
+require 'type_balancer/version'
+require 'type_balancer/calculator'
 
 module TypeBalancer
   class Error < StandardError; end
-end
+  class ConfigurationError < Error; end
 
-require_relative 'type_balancer/distribution_calculator'
-require_relative 'type_balancer/ordered_collection_manager'
+  # Load Ruby implementations
+  require_relative 'type_balancer/distribution_calculator'
+  require_relative 'type_balancer/ordered_collection_manager'
+  require_relative 'type_balancer/alternating_filler'
+  require_relative 'type_balancer/sequential_filler'
+  require_relative 'type_balancer/balancer'
+  require_relative 'type_balancer/distributor'
 
-# Load gap fillers C extension
-require_relative 'type_balancer/gap_fillers_ext'
-
-# Load Ruby interfaces for C extensions
-require_relative 'type_balancer/alternating_filler'
-require_relative 'type_balancer/sequential_filler'
-
-require_relative 'type_balancer/balancer'
-
-# Load C extensions
-require 'type_balancer/distributor'
-
-module TypeBalancer
-  # C extension-based balancer
-  class CBalancer
-    def initialize(collection, type_field, types = nil)
-      @collection = collection
-      @type_field = type_field
-      @types = types || TypeBalancer.send(:extract_types, collection, type_field)
-    end
-
-    def balance
-      return [] if @collection.empty?
-
-      # Group items by type
-      items_by_type = {}
-      @types.each { |type| items_by_type[type] = [] }
-
-      @collection.each do |item|
-        item_type = item[@type_field] || item[@type_field.to_s]
-        items_by_type[item_type] << item if items_by_type.key?(item_type)
-      end
-
-      # Use C extensions for position calculations
-      type_counts = items_by_type.values.map(&:size)
-      total_count = @collection.size
-      target_positions = []
-
-      # Calculate positions for each type using the C extension
-      type_counts.each do |count|
-        positions = TypeBalancer::Distributor.calculate_target_positions(
-          total_count,
-          count,
-          0.2
-        )
-        target_positions << positions
-      end
-
-      # Map items to their balanced positions
-      ordered_items = Array.new(total_count)
-      items_by_type.values.each_with_index do |items, idx|
-        current_positions = target_positions[idx] || []
-        items.each_with_index do |item, item_idx|
-          break if item_idx >= current_positions.size
-
-          ordered_items[current_positions[item_idx]] = item
-        end
-      end
-
-      # Fill in any gaps
-      ordered_items.compact
-    end
+  def self.calculate_positions(total_count:, ratio:, available_items: nil)
+    PositionCalculator.calculate_positions(
+      total_count: total_count,
+      ratio: ratio,
+      available_items: available_items
+    )
   end
 
   def self.balance(collection, type_field: :type, type_order: nil)
-    if ENV['USE_C_BALANCER']
-      CBalancer.new(collection, type_field, type_order || extract_types(collection, type_field)).balance
-    else
-      Balancer.new(collection, type_field: type_field, types: type_order).call
-    end
+    Balancer.new(collection, type_field: type_field, types: type_order).call
   end
 
   def self.extract_types(collection, type_field)
-    collection.map { |item| item[type_field] || item[type_field.to_s] }.uniq
+    collection.map do |item|
+      if item.respond_to?(type_field)
+        item.send(type_field)
+      elsif item.respond_to?(:[])
+        item[type_field] || item[type_field.to_s]
+      else
+        raise Error, "Cannot access type field '#{type_field}' on item #{item}"
+      end
+    end.uniq
   end
 
-  # Your code goes here...
+  # Error raised when input validation fails
+  class ValidationError < StandardError; end
 end

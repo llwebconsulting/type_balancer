@@ -1,269 +1,55 @@
-mkdir -p tmp/aarch64-linux/distributor/3.2.8
-cd tmp/aarch64-linux/distributor/3.2.8
-checking for ruby.h... yes
-creating Makefile
-cd -
-cd tmp/aarch64-linux/distributor/3.2.8
-compiling ../../../../ext/type_balancer/distributor.c
-compiling ../../../../ext/type_balancer/gap_filler.c
-compiling ../../../../ext/type_balancer/sequential_filler.c
-compiling ../../../../ext/type_balancer/position_calculator.c
-linking shared-object type_balancer/distributor.so
-cd -
-mkdir -p tmp/aarch64-linux/stage/lib/type_balancer
-/usr/bin/install -c -m 0755 distributor.so ../../../../lib/type_balancer
-cp tmp/aarch64-linux/distributor/3.2.8/distributor.so tmp/aarch64-linux/stage/lib/type_balancer/distributor.so
-mkdir -p tmp/aarch64-linux/gap_fillers/3.2.8
-cd tmp/aarch64-linux/gap_fillers/3.2.8
-checking for ruby.h... yes
-creating Makefile
-cd -
-cd tmp/aarch64-linux/gap_fillers/3.2.8
-compiling ../../../../ext/type_balancer/gap_filler.c
-compiling ../../../../ext/type_balancer/sequential_filler.c
-compiling ../../../../ext/type_balancer/alternating_filler.c
-compiling ../../../../ext/type_balancer/item_queue.c
-linking shared-object type_balancer/gap_fillers.so
-cd -
-/usr/bin/install -c -m 0755 gap_fillers.so ../../../../lib/type_balancer
-cp tmp/aarch64-linux/gap_fillers/3.2.8/gap_fillers.so tmp/aarch64-linux/stage/lib/type_balancer/gap_fillers.so
-/usr/local/bin/ruby benchmark/distributor_benchmark.rb
-YJIT Status: Not available/Disabled
++ cd /app
++ bundle exec ruby -I lib benchmark/end_to_end_benchmark.rb
+Ruby version: 3.2.8
+RUBY_PLATFORM: aarch64-linux
+YJIT enabled: false
+
 Running benchmarks...
 
-Benchmarking with total_count: 10, available_items: 5, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000223   0.000038   0.000261 (  0.000258)
-Pure Ruby:             0.000507   0.000000   0.000507 (  0.000508)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
+Benchmarking Tiny Dataset (10 items)
+ruby 3.2.8 (2025-03-26 revision 13f495dc2c) [aarch64-linux]
 Warming up --------------------------------------
-         C Extension     1.288M i/100ms
-           Pure Ruby   178.071k i/100ms
+ Ruby Implementation     8.136k i/100ms
 Calculating -------------------------------------
-         C Extension     17.236M (±20.7%) i/s   (58.02 ns/i) -     83.713M in   5.047330s
-           Pure Ruby      3.526M (±11.7%) i/s  (283.63 ns/i) -     17.273M in   5.053828s
+ Ruby Implementation     74.212k (± 6.1%) i/s   (13.47 μs/i) -    154.584k in   2.090755s
 
-Comparison:
-         C Extension: 17235672.0 i/s
-           Pure Ruby:  3525731.8 i/s - 4.89x  slower
+Distribution Stats:
+Video: 4 (40.0%)
+Image: 3 (30.0%)
+Article: 3 (30.0%)
 
-
-Benchmarking with total_count: 1000, available_items: 200, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000025   0.000000   0.000025 (  0.000006)
-Pure Ruby:             0.000666   0.000000   0.000666 (  0.000667)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
+Benchmarking Small Dataset (100 items)
+ruby 3.2.8 (2025-03-26 revision 13f495dc2c) [aarch64-linux]
 Warming up --------------------------------------
-         C Extension     1.721M i/100ms
-           Pure Ruby    15.734k i/100ms
+ Ruby Implementation   181.000 i/100ms
 Calculating -------------------------------------
-         C Extension     23.860M (± 9.0%) i/s   (41.91 ns/i) -    118.734M in   5.017970s
-           Pure Ruby    152.535k (± 8.9%) i/s    (6.56 μs/i) -    770.966k in   5.099321s
+ Ruby Implementation      1.934k (± 4.9%) i/s  (517.12 μs/i) -      3.982k in   2.064193s
 
-Comparison:
-         C Extension: 23860058.6 i/s
-           Pure Ruby:   152534.7 i/s - 156.42x  slower
+Distribution Stats:
+Video: 34 (34.0%)
+Image: 33 (33.0%)
+Article: 33 (33.0%)
 
-
-Benchmarking with total_count: 100000, available_items: 20000, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000008   0.000000   0.000008 (  0.000005)
-Pure Ruby:             0.059519   0.008166   0.067685 (  0.067711)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
+Benchmarking Medium Dataset (1000 items)
+ruby 3.2.8 (2025-03-26 revision 13f495dc2c) [aarch64-linux]
 Warming up --------------------------------------
-         C Extension     1.652M i/100ms
-           Pure Ruby   152.000 i/100ms
+ Ruby Implementation     1.000 i/100ms
 Calculating -------------------------------------
-         C Extension     24.235M (± 9.5%) i/s   (41.26 ns/i) -    120.617M in   5.027301s
-           Pure Ruby      1.592k (± 8.4%) i/s  (628.08 μs/i) -      7.904k in   5.003147s
+ Ruby Implementation     18.611 (±16.1%) i/s   (53.73 ms/i) -     54.000 in   3.010201s
 
-Comparison:
-         C Extension: 24235131.9 i/s
-           Pure Ruby:     1592.2 i/s - 15221.59x  slower
+Distribution Stats:
+Video: 334 (33.4%)
+Image: 333 (33.3%)
+Article: 333 (33.3%)
 
-/usr/local/bin/ruby benchmark/combined_benchmark.rb
-YJIT Status: Not available/Disabled
-Running benchmarks...
-
-Benchmarking with total_count: 10, available_items: 5, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000181   0.000055   0.000236 (  0.000233)
-Pure Ruby:             0.000435   0.000000   0.000435 (  0.000436)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
+Benchmarking Large Dataset (10000 items)
+ruby 3.2.8 (2025-03-26 revision 13f495dc2c) [aarch64-linux]
 Warming up --------------------------------------
-         C Extension     1.648M i/100ms
-           Pure Ruby   107.859k i/100ms
+ Ruby Implementation     1.000 i/100ms
 Calculating -------------------------------------
-         C Extension     21.421M (±28.5%) i/s   (46.68 ns/i) -     90.648M in   5.007216s
-           Pure Ruby      3.391M (±15.6%) i/s  (294.92 ns/i) -     16.502M in   5.002880s
+ Ruby Implementation      0.227 (± 0.0%) i/s     (4.41 s/i) -      1.000 in   4.405356s
 
-Comparison:
-         C Extension: 21420917.6 i/s
-           Pure Ruby:  3390727.4 i/s - 6.32x  slower
-
-
-Benchmarking with total_count: 1000, available_items: 200, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000029   0.000001   0.000030 (  0.000016)
-Pure Ruby:             0.000000   0.000848   0.000848 (  0.000849)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
-Warming up --------------------------------------
-         C Extension     1.664M i/100ms
-           Pure Ruby    12.454k i/100ms
-Calculating -------------------------------------
-         C Extension     23.262M (±12.0%) i/s   (42.99 ns/i) -    114.798M in   5.018048s
-           Pure Ruby    148.936k (±10.8%) i/s    (6.71 μs/i) -    747.240k in   5.087146s
-
-Comparison:
-         C Extension: 23262363.2 i/s
-           Pure Ruby:   148935.7 i/s - 156.19x  slower
-
-
-Benchmarking with total_count: 100000, available_items: 20000, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000026   0.000000   0.000026 (  0.000015)
-Pure Ruby:             0.070289   0.006573   0.076862 (  0.076890)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
-Warming up --------------------------------------
-         C Extension     1.661M i/100ms
-           Pure Ruby   152.000 i/100ms
-Calculating -------------------------------------
-         C Extension     24.247M (± 9.6%) i/s   (41.24 ns/i) -    121.244M in   5.052639s
-           Pure Ruby      1.641k (± 7.1%) i/s  (609.24 μs/i) -      8.208k in   5.026593s
-
-Comparison:
-         C Extension: 24246736.9 i/s
-           Pure Ruby:     1641.4 i/s - 14771.96x  slower
-
-/usr/local/bin/ruby benchmark/distributor_benchmark.rb
-YJIT Status: Not available/Disabled
-Running benchmarks...
-
-Benchmarking with total_count: 10, available_items: 5, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000250   0.000000   0.000250 (  0.000244)
-Pure Ruby:             0.000761   0.000002   0.000763 (  0.000770)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
-Warming up --------------------------------------
-         C Extension     1.115M i/100ms
-           Pure Ruby   190.258k i/100ms
-Calculating -------------------------------------
-         C Extension     16.689M (±16.1%) i/s   (59.92 ns/i) -     81.377M in   5.006123s
-           Pure Ruby      2.712M (±13.0%) i/s  (368.71 ns/i) -     13.508M in   5.069311s
-
-Comparison:
-         C Extension: 16688622.8 i/s
-           Pure Ruby:  2712189.1 i/s - 6.15x  slower
-
-
-Benchmarking with total_count: 1000, available_items: 200, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000023   0.000001   0.000024 (  0.000015)
-Pure Ruby:             0.001528   0.000000   0.001528 (  0.001529)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
-Warming up --------------------------------------
-         C Extension     1.378M i/100ms
-           Pure Ruby    12.848k i/100ms
-Calculating -------------------------------------
-         C Extension     13.748M (±31.7%) i/s   (72.74 ns/i) -     59.271M in   5.673207s
-           Pure Ruby     96.939k (±25.9%) i/s   (10.32 μs/i) -    436.832k in   5.074946s
-
-Comparison:
-         C Extension: 13747671.2 i/s
-           Pure Ruby:    96939.1 i/s - 141.82x  slower
-
-
-Benchmarking with total_count: 100000, available_items: 20000, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000040   0.000000   0.000040 (  0.000017)
-Pure Ruby:             0.073871   0.003176   0.077047 (  0.077068)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
-Warming up --------------------------------------
-         C Extension     1.396M i/100ms
-           Pure Ruby   114.000 i/100ms
-Calculating -------------------------------------
-         C Extension     22.723M (±16.4%) i/s   (44.01 ns/i) -    110.287M in   5.047947s
-           Pure Ruby      1.664k (±10.1%) i/s  (600.86 μs/i) -      8.322k in   5.061656s
-
-Comparison:
-         C Extension: 22722725.9 i/s
-           Pure Ruby:     1664.3 i/s - 13653.08x  slower
-
-/usr/local/bin/ruby benchmark/combined_benchmark.rb
-YJIT Status: Not available/Disabled
-Running benchmarks...
-
-Benchmarking with total_count: 10, available_items: 5, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000253   0.000047   0.000300 (  0.000299)
-Pure Ruby:             0.000497   0.000000   0.000497 (  0.000497)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
-Warming up --------------------------------------
-         C Extension     1.501M i/100ms
-           Pure Ruby   193.002k i/100ms
-Calculating -------------------------------------
-         C Extension     23.938M (± 9.6%) i/s   (41.77 ns/i) -    120.082M in   5.063845s
-           Pure Ruby      3.345M (±16.4%) i/s  (298.95 ns/i) -     16.212M in   5.021707s
-
-Comparison:
-         C Extension: 23938313.9 i/s
-           Pure Ruby:  3344987.1 i/s - 7.16x  slower
-
-
-Benchmarking with total_count: 1000, available_items: 200, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000026   0.000000   0.000026 (  0.000006)
-Pure Ruby:             0.000208   0.001032   0.001240 (  0.001243)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
-Warming up --------------------------------------
-         C Extension     1.547M i/100ms
-           Pure Ruby    13.888k i/100ms
-Calculating -------------------------------------
-         C Extension     23.227M (±16.2%) i/s   (43.05 ns/i) -    111.351M in   5.011124s
-           Pure Ruby    147.460k (±10.5%) i/s    (6.78 μs/i) -    736.064k in   5.055895s
-
-Comparison:
-         C Extension: 23226552.8 i/s
-           Pure Ruby:   147460.5 i/s - 157.51x  slower
-
-
-Benchmarking with total_count: 100000, available_items: 20000, ratio: 0.2
-                           user     system      total        real
-C Extension:           0.000029   0.000000   0.000029 (  0.000007)
-Pure Ruby:             0.078983   0.017673   0.096656 (  0.096687)
-
-Benchmark IPS (iterations per second):
-ruby 3.2.8 (2025-03-26 revision 13f495dc2c) +YJIT [aarch64-linux]
-Warming up --------------------------------------
-         C Extension     1.686M i/100ms
-           Pure Ruby   146.000 i/100ms
-Calculating -------------------------------------
-         C Extension     20.474M (±23.4%) i/s   (48.84 ns/i) -     96.114M in   5.024370s
-           Pure Ruby      1.231k (±31.3%) i/s  (812.62 μs/i) -      4.526k in   6.514181s
-
-Comparison:
-         C Extension: 20474496.7 i/s
-           Pure Ruby:     1230.6 i/s - 16637.90x  slower
-
+Distribution Stats:
+Video: 3334 (33.34%)
+Image: 3333 (33.33%)
+Article: 3333 (33.33%)

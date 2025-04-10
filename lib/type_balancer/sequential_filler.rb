@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module TypeBalancer
-  # Ruby interface for the SequentialFiller C extension
+  # Fills gaps in positions sequentially with remaining items
   class SequentialFiller
     def initialize(collection, items_arrays)
       @collection = collection
@@ -9,13 +9,24 @@ module TypeBalancer
     end
 
     def self.fill(collection, positions, items_arrays)
-      # This method is implemented in C
-      # See ext/type_balancer/sequential_filler.c
+      new(collection, items_arrays).fill_gaps(positions)
     end
 
     def fill_gaps(positions)
-      # This method is implemented in C
-      # See ext/type_balancer/sequential_filler.c
+      return [] if positions.nil? || positions.empty?
+      return positions if positions.compact.size == positions.size
+
+      remaining_items = @items_arrays.flatten
+      filled_positions = positions.dup
+
+      positions.each_with_index do |pos, idx|
+        next unless pos.nil?
+        break if remaining_items.empty?
+
+        filled_positions[idx] = remaining_items.shift
+      end
+
+      filled_positions
     end
   end
 end

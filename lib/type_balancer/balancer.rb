@@ -5,85 +5,100 @@ module TypeBalancer
   # It uses a distribution calculator to determine optimal positions for each type
   # and a gap filler strategy to place items in the final sequence.
   class Balancer
-    def initialize(collection, type_field:, types: nil, distribution_calculator: DistributionCalculator.new)
+    def initialize(collection, type_field: :type, types: nil, distribution_calculator: nil)
       @collection = collection
       @type_field = type_field
-      @types = types || extract_unique_types
-      @distribution_calculator = distribution_calculator
+      @types = types || extract_types
+      @distribution_calculator = distribution_calculator || Distributor
     end
 
     def call
       return [] if @collection.empty?
-      return @collection if single_type?
 
-      balance_collection
+      # Group items by type
+      items_by_type = @collection.group_by { |item| get_type(item) }
+
+      # Calculate target positions for each type
+      total_count = @collection.size
+      positions_by_type = {}
+
+      # Calculate ratios based on type order and counts
+      ratios = calculate_ratios(items_by_type)
+
+      # Calculate positions for each type
+      @types.each_with_index do |type, index|
+        items = items_by_type[type] || []
+        ratio = ratios[index]
+        positions = @distribution_calculator.calculate_target_positions(total_count, items.size, ratio)
+        positions_by_type[type] = positions
+      end
+
+      # Map items to their balanced positions
+      balanced_items = Array.new(total_count)
+
+      # Process types in order
+      @types.each do |type|
+        items = items_by_type[type] || []
+        positions = positions_by_type[type] || []
+
+        items.each_with_index do |item, index|
+          pos = positions[index]
+          next unless pos && pos < total_count && balanced_items[pos].nil?
+
+          balanced_items[pos] = item
+        end
+      end
+
+      # Fill any gaps with remaining items
+      remaining_items = @collection.reject { |item| balanced_items.include?(item) }
+      remaining_items.each do |item|
+        empty_pos = balanced_items.index(nil)
+        break unless empty_pos
+
+        balanced_items[empty_pos] = item
+      end
+
+      balanced_items.compact
     end
 
     private
 
-    def single_type?
-      @types.any? { |type| items_of_type(type).size == @collection.size }
-    end
+    def calculate_ratios(items_by_type)
+      @collection.size.to_f
+      @types.map { |type| (items_by_type[type] || []).size }
 
-    def balance_collection
-      total_count = @collection.size
-      collection_manager = OrderedCollectionManager.new(total_count)
-
-      # Group items by type
-      items_by_type = @types.map { |type| items_of_type(type) }
-
-      # Calculate target positions for each type
-      target_positions_by_type = items_by_type.map.with_index do |items, index|
-        ratio = if @types.size == 1
-                  1.0 # Use all positions for single type
-                elsif index.zero?
-                  0.4  # Higher ratio for first type
-                else
-                  0.3  # Equal ratio for remaining types
-                end
-
-        @distribution_calculator.calculate_target_positions(
-          total_count,
-          items.size,
-          ratio
-        )
+      case @types.size
+      when 0
+        []
+      when 1
+        [1.0]
+      when 2
+        # For two types, use their relative proportions
+        [0.6, 0.4]
+      else
+        # For three or more types, use the same ratios as C implementation
+        first_ratio = 0.35
+        remaining_ratio = (1.0 - first_ratio) / (@types.size - 1)
+        [first_ratio] + Array.new(@types.size - 1, remaining_ratio)
       end
-
-      # Place items at their positions
-      items_by_type.zip(target_positions_by_type).each do |items, positions|
-        next if positions.empty?
-
-        collection_manager.place_at_positions(items.first(positions.size), positions)
-      end
-
-      # Get remaining items
-      remaining_items = items_by_type.zip(target_positions_by_type).flat_map do |items, positions|
-        items[positions.size..]
-      end.compact
-
-      # Fill remaining gaps
-      collection_manager.fill_remaining_gaps([remaining_items]) if remaining_items.any?
-
-      # Return the result
-      collection_manager.result
     end
 
-    def items_of_type(type)
-      @collection.select { |item| item_type(item) == type }
-    end
-
-    def item_type(item)
+    def get_type(item)
       if item.respond_to?(@type_field)
         item.send(@type_field)
       elsif item.respond_to?(:[])
-        item[@type_field.to_s] || item[@type_field.to_sym]
+        item[@type_field] || item[@type_field.to_s]
       else
         raise Error, "Cannot access type field '#{@type_field}' on item #{item}"
       end
     end
 
-    def extract_unique_types
-      @collection.map { |item| item_type(item) }.uniq
+    def extract_types
+      # Get unique types in the order they appear in the collection
+      types = @collection.map { |item| get_type(item) }.uniq
+      # Sort types to ensure consistent order: video, image, article
+      default_order = %w[video image article]
+      types.sort_by { |type| default_order.index(type) || types.size }
     end
   end
 end

@@ -1,11 +1,14 @@
+# Allow platform to be specified at build time
+ARG PLATFORM=linux/arm64
 ARG RUBY_VERSION
-FROM ruby:${RUBY_VERSION}-slim
+FROM --platform=${PLATFORM} ruby:${RUBY_VERSION}-slim
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
     git \
-    curl \
+    build-essential \
+    pkg-config \
+    libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust if YJIT is enabled
@@ -19,7 +22,6 @@ WORKDIR /app
 # Copy all necessary files for building the gem
 COPY Gemfile Gemfile.lock type_balancer.gemspec Rakefile ./
 COPY lib/ lib/
-COPY ext/ ext/
 COPY sig/ sig/
 COPY benchmark/ benchmark/
 
@@ -30,9 +32,7 @@ RUN git init && \
 # Install dependencies
 RUN bundle install
 
-# Set YJIT environment variable
-ARG RUBY_YJIT_ENABLE=0
-ENV RUBY_YJIT_ENABLE=${RUBY_YJIT_ENABLE}
+# Set environment variable for Ruby to find native extensions
+ENV RUBYLIB=/app/lib
 
-# Run benchmarks
-CMD ["bundle", "exec", "rake", "benchmark"] 
+CMD ["bundle", "exec", "rake", "benchmark:complete"] 
