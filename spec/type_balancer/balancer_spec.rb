@@ -21,13 +21,13 @@ RSpec.describe TypeBalancer::Balancer do
       before do
         # Mock distribution calculator for each type
         allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(5, 2, 0.35) # video type (primary)
+          .with(5, 2, 0.4) # video type (primary)
           .and_return([0, 3])
         allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(5, 2, 0.325)  # image type (remaining ratio = (1 - 0.35) / 2 = 0.325)
+          .with(5, 2, 0.3)  # image type (remaining ratio = 0.6 / 2 = 0.3)
           .and_return([1, 4])
         allow(distribution_calculator).to receive(:calculate_target_positions)
-          .with(5, 1, 0.325)  # strip type (remaining ratio = (1 - 0.35) / 2 = 0.325)
+          .with(5, 1, 0.3)  # strip type (remaining ratio = 0.6 / 2 = 0.3)
           .and_return([2])
       end
 
@@ -124,6 +124,59 @@ RSpec.describe TypeBalancer::Balancer do
 
       it 'raises an error' do
         expect { result }.to raise_error(TypeBalancer::Error, /Cannot access type field/)
+      end
+    end
+
+    context 'with large collections' do
+      let(:batch_size) { TypeBalancer::Balancer::BATCH_SIZE }
+      let(:large_collection_size) { (batch_size * 2) + 100 } # More than 2 batches
+
+      let(:items) do
+        large_collection_size.times.map do |i|
+          type = case i % 3
+                 when 0 then 'video'
+                 when 1 then 'image'
+                 else 'article'
+                 end
+          { type: type, id: i }
+        end
+      end
+
+      before do
+        # Allow any calculate_target_positions call since we'll have multiple batches
+        allow(distribution_calculator).to receive(:calculate_target_positions)
+          .with(any_args)
+          .and_return([]) # Return empty array for simplicity
+      end
+
+      it 'processes the collection in batches' do
+        result
+
+        # Verify distribution calculator was called for each type in each full batch
+        full_batches = large_collection_size / batch_size
+        remainder = large_collection_size % batch_size
+        expected_calls = full_batches * 3 # 3 types per batch
+        expected_calls += 3 if remainder > 0 # Add calls for remainder batch
+
+        expect(distribution_calculator)
+          .to have_received(:calculate_target_positions)
+          .exactly(expected_calls).times
+      end
+
+      it 'maintains all items from the original collection' do
+        expect(result.map { |item| item[:id] }.sort)
+          .to eq((0...large_collection_size).to_a)
+      end
+
+      it 'maintains relative type distribution across batches' do
+        type_counts = result.group_by { |item| item[:type] }
+                            .transform_values(&:count)
+
+        # Each type should be roughly 1/3 of the total
+        type_counts.each_value do |count|
+          ratio = count.to_f / large_collection_size
+          expect(ratio).to be_within(0.1).of(1.0 / 3.0)
+        end
       end
     end
   end
