@@ -5,7 +5,6 @@
 [![Gem Version](https://badge.fury.io/rb/type_balancer.svg)](https://badge.fury.io/rb/type_balancer)
 [![CI](https://github.com/llwebconsulting/type_balancer/actions/workflows/ci.yml/badge.svg)](https://github.com/llwebconsulting/type_balancer/actions/workflows/ci.yml)
 [![Ruby Coverage](https://img.shields.io/badge/ruby--coverage-78.57%25-yellow.svg)](https://github.com/llwebconsulting/type_balancer/blob/main/coverage/index.html)
-[![C Coverage](https://img.shields.io/badge/c--coverage-92.4%25-brightgreen.svg)](https://github.com/llwebconsulting/type_balancer/blob/main/ext/type_balancer/README.md)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
 
 A Ruby gem for balancing and distributing items of different types across a sequence while maintaining optimal spacing.
@@ -46,19 +45,21 @@ balanced_items = TypeBalancer.balance(items, type_field: :type)
 
 ## Performance Characteristics
 
-TypeBalancer is designed to handle collections of varying sizes. Here are the current performance metrics:
+TypeBalancer is designed to handle collections of varying sizes efficiently. Here are the current performance metrics:
 
-- Small collections (10-100 items): Very fast, processing in under 1ms
-- Medium collections (1,000 items): Good performance, ~50ms processing time
-- Large collections (10,000 items): ~4.3-4.7 seconds processing time
+- Tiny collections (10 items): Microsecond-level processing (9-14μs)
+- Small collections (100 items): Sub-millisecond processing (~450-500μs)
+- Medium collections (1,000 items): Fast processing (~20-21ms)
+- Large collections (10,000 items): Efficient processing (~193-209ms)
 
-Performance varies slightly across Ruby versions (tested on 3.2.8, 3.3.7, and 3.4.2). YJIT provides marginal improvements (2-3%) for larger datasets.
+Performance has been thoroughly tested across Ruby versions (3.2.8, 3.3.7, and 3.4.2). YJIT provides significant improvements for small datasets (up to 51% faster for tiny collections) with varying impact on larger datasets. For detailed benchmarks across Ruby versions and YJIT configurations, see our [benchmark documentation](docs/benchmarks/README.md).
 
 ### Recommendations
 
-- For optimal performance, we recommend processing collections of up to 1,000 items at a time
-- For larger datasets, consider breaking them into smaller batches
-- If you need to process very large collections (>10,000 items), please open an issue - optimizing for larger datasets is our current priority
+- Suitable for real-time processing of collections up to 10,000 items
+- Excellent performance for content management systems and feed generation
+- Thread-safe and memory-efficient
+- If you need to process very large collections (>10,000 items), consider batch processing or open an issue for guidance
 
 ## Features
 
