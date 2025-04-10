@@ -10,7 +10,6 @@ module TypeBalancer
   # Load Ruby implementations
   require_relative 'type_balancer/distribution_calculator'
   require_relative 'type_balancer/ordered_collection_manager'
-  require_relative 'type_balancer/gap_fillers_ext'
   require_relative 'type_balancer/alternating_filler'
   require_relative 'type_balancer/sequential_filler'
   require_relative 'type_balancer/balancer'
