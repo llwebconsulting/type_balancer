@@ -111,5 +111,10 @@ jobs:
           ruby-version: '3.4.2'
           bundler-cache: true
       
+      - name: Build and install gem
+        run: |
+          gem build type_balancer.gemspec
+          gem install type_balancer-*.gem
+      
       - name: Run quality checks
-        run: ruby examples/quality.rb 
+        run: ruby -I lib examples/quality.rb 
