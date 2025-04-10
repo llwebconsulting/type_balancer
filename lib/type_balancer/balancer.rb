@@ -1,126 +1,137 @@
 # frozen_string_literal: true
 
-module TypeBalancer
-  # Main class responsible for balancing items in a collection based on their types.
-  # It uses a distribution calculator to determine optimal positions for each type
-  # and a gap filler strategy to place items in the final sequence.
-  class Balancer
-    BATCH_SIZE = 500 # Process items in batches of 500 for better performance
+require_relative 'ratio_calculator'
+require_relative 'batch_processing'
 
-    def initialize(collection, type_field: :type, types: nil, distribution_calculator: nil)
-      @collection = collection
-      @type_field = type_field
-      @types = types || extract_types
-      @distribution_calculator = distribution_calculator || Distributor
+module TypeBalancer
+  # Handles balancing of items across batches based on type ratios
+  class Balancer
+    # Initialize a new Balancer instance
+    #
+    # @param types [Array<String>] List of valid types
+    # @param batch_size [Integer] Size of each batch
+    # @param type_order [Array<String>, nil] Optional order of types
+    def initialize(types, batch_size = 10, type_order: nil)
+      @types = Array(types)
+      @batch_size = batch_size
+      @type_order = type_order || @types.dup
+
+      raise ArgumentError, 'Types cannot be empty' if @types.empty?
+      raise ArgumentError, 'Batch size must be positive' unless @batch_size.positive?
+      raise ArgumentError, 'Type order must contain all types' unless (@type_order - @types).empty?
     end
 
-    def call
-      return [] if @collection.empty?
+    # Main entry point for balancing items
+    #
+    # @param collection [Array<Hash>, Hash<String, Array>] Collection of items to balance
+    # @return [Array<Array>] Balanced batches of items
+    def call(collection)
+      items_by_type = collection.is_a?(Hash) ? collection : group_items_by_type(collection)
+      validate_items_by_type!(items_by_type)
+      balance(items_by_type)
+    end
 
-      if @collection.size <= BATCH_SIZE
-        process_single_batch(@collection)
-      else
-        process_multiple_batches
+    # Balance items into batches based on type ratios
+    #
+    # @param items_by_type [Hash<String, Array>] Items grouped by type
+    # @return [Array<Array>] Balanced batches of items
+    def balance(items_by_type)
+      return [] if items_by_type.empty?
+
+      # First, calculate how many times we need to repeat each item
+      total_items = items_by_type.values.sum(&:size)
+      ratios = calculate_ratios(items_by_type)
+
+      # Create expanded arrays for each type based on ratios
+      expanded_items = {}
+      items_by_type.each do |type, items|
+        target_count = (total_items * ratios[type]).round
+        repeats = (target_count.to_f / items.size).ceil
+        expanded_items[type] = items * repeats
       end
+
+      # Now distribute items while maintaining relative ratios and type order
+      result = []
+      current_positions = Hash.new(0)
+
+      total_items.times do |_|
+        # Use type_order to determine which type to process next
+        target_type = @type_order.find do |type|
+          current_ratio = current_positions[type].to_f / total_items
+          target_ratio = ratios[type]
+          current_ratio < target_ratio && !expanded_items[type].empty?
+        end
+
+        # If no type from type_order is available, fall back to the original method
+        target_type ||= find_next_type(ratios, current_positions, total_items)
+
+        # Get next item of this type
+        items = expanded_items[target_type]
+        pos = current_positions[target_type]
+
+        # Add item and update position
+        result << items[pos % items_by_type[target_type].size]
+        current_positions[target_type] += 1
+      end
+
+      # Ensure we have exactly the right number of items and split into batches
+      result = result[0...total_items]
+      result.each_slice(@batch_size).to_a
     end
 
     private
 
-    def process_single_batch(items)
-      # Group items by type
-      items_by_type = items.group_by { |item| get_type(item) }
+    def validate_items_by_type!(items_by_type)
+      raise ArgumentError, 'Collection cannot be empty' if items_by_type.empty?
 
-      # Calculate ratios based on type order and counts
-      ratios = calculate_ratios(items_by_type)
+      # Validate that all types in the collection are allowed
+      invalid_types = items_by_type.keys - @types
+      return if invalid_types.empty?
 
-      # Calculate positions for each type
-      positions_by_type = calculate_positions_by_type(items_by_type, ratios, items.size)
-
-      # Map items to their balanced positions
-      balanced_items = place_items_in_positions(items_by_type, positions_by_type, items.size)
-
-      # Fill any gaps with remaining items
-      fill_gaps(balanced_items, items)
+      raise TypeBalancer::Error, "Invalid types: #{invalid_types.join(', ')}. Allowed types: #{@types.join(', ')}"
     end
 
-    def process_multiple_batches
-      result = []
-      @collection.each_slice(BATCH_SIZE) do |batch|
-        result.concat(process_single_batch(batch))
-      end
-      result
-    end
-
-    def calculate_positions_by_type(items_by_type, ratios, total_count)
-      positions_by_type = {}
-
-      @types.each_with_index do |type, index|
-        items = items_by_type[type] || []
-        ratio = ratios[index]
-        positions = @distribution_calculator.calculate_target_positions(total_count, items.size, ratio)
-        positions_by_type[type] = positions
-      end
-
-      positions_by_type
-    end
-
-    def place_items_in_positions(items_by_type, positions_by_type, total_count)
-      balanced_items = Array.new(total_count)
-
-      @types.each do |type|
-        items = items_by_type[type] || []
-        positions = positions_by_type[type] || []
-
-        items.each_with_index do |item, index|
-          pos = positions[index]
-          next unless pos && pos < total_count && balanced_items[pos].nil?
-
-          balanced_items[pos] = item
-        end
-      end
-
-      balanced_items
-    end
-
-    def fill_gaps(balanced_items, original_items)
-      # Fill any gaps with remaining items
-      remaining_items = original_items.reject { |item| balanced_items.include?(item) }
-      empty_positions = balanced_items.each_index.select { |i| balanced_items[i].nil? }
-
-      empty_positions.each_with_index do |pos, idx|
-        break unless idx < remaining_items.size
-
-        balanced_items[pos] = remaining_items[idx]
-      end
-
-      balanced_items.compact
-    end
-
-    def calculate_ratios(_items_by_type)
-      case @types.size
-      when 1
-        [1.0]
-      when 2
-        [0.6, 0.4]
+    def extract_type(item)
+      case item
+      when Hash
+        item[:type] || item['type'] or raise TypeError, 'Hash is missing type key'
       else
-        # First type gets 0.4, rest split remaining 0.6 evenly
-        remaining = (0.6 / (@types.size - 1).to_f).round(6)
-        [0.4] + Array.new(@types.size - 1, remaining)
+        item.type
       end
     end
 
-    def get_type(item)
-      if item.respond_to?(@type_field)
-        item.send(@type_field)
-      elsif item.respond_to?(:[])
-        item[@type_field] || item[@type_field.to_s]
-      else
-        raise Error, "Cannot access type field '#{@type_field}' on item #{item}"
-      end
+    def group_items_by_type(collection)
+      collection.group_by { |item| extract_type(item) }
     end
 
-    def extract_types
-      TypeBalancer.extract_types(@collection, @type_field)
+    def calculate_ratios(items_by_type)
+      return { @types.first => 1.0 } if @types.size == 1
+
+      # Calculate total count and type counts
+      total_count = items_by_type.values.sum(&:size)
+
+      # Create a hash of type counts
+      type_counts = @types.to_h { |type| [type, items_by_type.fetch(type, []).size] }
+
+      # Ensure minimum representation for each type
+      min_ratio = 0.1
+      remaining_ratio = 1.0 - (min_ratio * @types.size)
+
+      ratios = type_counts.transform_values do |count|
+        min_ratio + ((count / total_count) * remaining_ratio)
+      end
+
+      # Normalize ratios to sum to 1.0
+      sum = ratios.values.sum
+      ratios.transform_values { |ratio| ratio / sum }
+    end
+
+    def find_next_type(ratios, current_positions, total_count)
+      @types.min_by do |type|
+        current_ratio = current_positions[type].to_f / total_count
+        target_ratio = ratios[type]
+        current_ratio - target_ratio
+      end
     end
   end
 end
