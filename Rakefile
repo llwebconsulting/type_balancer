@@ -66,36 +66,14 @@ task default: [:test_with_mocks, 'lint:all']
 
 # Benchmark tasks
 namespace :benchmark do
-  desc 'Run distributor benchmark comparing C extension vs Pure Ruby (without YJIT)'
-  task :distributor do
-    ruby 'benchmark/distributor_benchmark.rb'
+  desc 'Run end-to-end benchmarks'
+  task :end_to_end do
+    ruby 'benchmark/end_to_end_benchmark.rb'
   end
 
-  desc 'Run combined benchmark comparing full C vs Ruby implementations (without YJIT)'
-  task :combined do
-    ruby 'benchmark/combined_benchmark.rb'
-  end
+  desc 'Run all benchmarks'
+  task all: [:end_to_end]
 
-  desc 'Run all benchmarks (without YJIT)'
-  task all: %i[distributor combined]
-
-  namespace :yjit do
-    desc 'Run distributor benchmark comparing C extension vs Pure Ruby with YJIT enabled'
-    task :distributor do
-      ENV['RUBY_YJIT_ENABLE'] = '1'
-      ruby 'benchmark/distributor_benchmark.rb'
-    end
-
-    desc 'Run combined benchmark comparing full C vs Ruby implementations with YJIT enabled'
-    task :combined do
-      ENV['RUBY_YJIT_ENABLE'] = '1'
-      ruby 'benchmark/combined_benchmark.rb'
-    end
-
-    desc 'Run all benchmarks with YJIT enabled'
-    task all: %i[distributor combined]
-  end
-
-  desc 'Run all benchmarks with and without YJIT'
-  task complete: %i[all yjit:all]
+  desc 'Run complete benchmark suite'
+  task complete: [:all]
 end
