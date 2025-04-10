@@ -17,7 +17,6 @@ Style/StringLiterals:
 Style/Documentation:
   Enabled: false
 
-# Disable because we can't properly document the module_eval with current syntax
 Style/DocumentDynamicEvalDefinition:
   Enabled: false
 
@@ -30,28 +29,26 @@ Metrics/BlockLength:
 Metrics/MethodLength:
   Max: 20
   Exclude:
-    - 'lib/type_balancer.rb'
+    - 'lib/type_balancer/distributor.rb'
     - 'lib/type_balancer/balancer.rb'
-    - 'lib/type_balancer/pure_ruby_calculator.rb'
 
-# Add exceptions for our complex balancing algorithms
 Metrics/AbcSize:
+  Max: 20
   Exclude:
-    - 'lib/type_balancer.rb'
+    - 'lib/type_balancer/distributor.rb'
     - 'lib/type_balancer/balancer.rb'
-    - 'lib/type_balancer/pure_ruby_calculator.rb'
 
 Metrics/CyclomaticComplexity:
+  Max: 10
   Exclude:
-    - 'lib/type_balancer.rb'
+    - 'lib/type_balancer/distributor.rb'
     - 'lib/type_balancer/balancer.rb'
-    - 'lib/type_balancer/pure_ruby_calculator.rb'
 
 Metrics/PerceivedComplexity:
+  Max: 10
   Exclude:
-    - 'lib/type_balancer.rb'
+    - 'lib/type_balancer/distributor.rb'
     - 'lib/type_balancer/balancer.rb'
-    - 'lib/type_balancer/pure_ruby_calculator.rb'
 
 RSpec/ExampleLength:
   Max: 15

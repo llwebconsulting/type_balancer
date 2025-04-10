@@ -81,7 +81,12 @@ module TypeBalancer
 
     def place_items_at_positions(items_by_type, target_positions)
       result = Array.new(@items.size)
+      place_items_at_target_positions(items_by_type, target_positions, result)
+      fill_remaining_positions(items_by_type, target_positions, result)
+      result.compact
+    end
 
+    def place_items_at_target_positions(items_by_type, target_positions, result)
       items_by_type.each_with_index do |items, type_index|
         positions = target_positions[type_index]
         next if positions.empty?
@@ -92,21 +97,27 @@ module TypeBalancer
           result[positions[item_index]] = item
         end
       end
+    end
 
-      # Fill remaining positions with unused items
-      remaining_items = items_by_type.flat_map.with_index do |items, type_index|
+    def fill_remaining_positions(items_by_type, target_positions, result)
+      remaining_items = collect_remaining_items(items_by_type, target_positions)
+      fill_empty_slots(result, remaining_items)
+    end
+
+    def collect_remaining_items(items_by_type, target_positions)
+      items_by_type.flat_map.with_index do |items, type_index|
         positions = target_positions[type_index]
         items[positions.size..]
       end.compact
+    end
 
+    def fill_empty_slots(result, remaining_items)
       result.each_with_index do |item, index|
         next unless item.nil?
         break if remaining_items.empty?
 
         result[index] = remaining_items.shift
       end
-
-      result.compact
     end
   end
 end
