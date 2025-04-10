@@ -97,4 +97,19 @@ jobs:
         run: gem install bundler-audit
       
       - name: Check for vulnerable dependencies
-        run: bundle-audit check --update 
+        run: bundle-audit check --update
+
+  quality:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.2'
+          bundler-cache: true
+      
+      - name: Run quality checks
+        run: ruby examples/quality.rb 
