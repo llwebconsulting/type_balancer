@@ -13,7 +13,7 @@ module TypeBalancer
         target_count = [target_count, available_count].min
 
         # Special cases
-        return [] if target_count == 0
+        return [] if target_count.zero?
         return [0] if target_count == 1
 
         # Calculate spacing

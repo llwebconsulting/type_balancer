@@ -63,8 +63,8 @@ module TypeBalancer
     private
 
     def calculate_ratios(items_by_type)
-      total_items = @collection.size.to_f
-      type_counts = @types.map { |type| (items_by_type[type] || []).size }
+      @collection.size.to_f
+      @types.map { |type| (items_by_type[type] || []).size }
 
       case @types.size
       when 0

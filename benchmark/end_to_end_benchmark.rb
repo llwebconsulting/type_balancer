@@ -1,17 +1,21 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'bundler/setup'
-require 'benchmark'
-require 'benchmark/ips'
-require_relative '../lib/type_balancer'
+require "bundler/setup"
+require "benchmark"
+require "benchmark/ips"
+require_relative "../lib/type_balancer"
 
 # Check if YJIT is enabled
-puts "YJIT enabled: #{RubyVM::YJIT.enabled? rescue false}"
+puts "YJIT enabled: #{begin
+  RubyVM::YJIT.enabled?
+rescue StandardError
+  false
+end}"
 
 # Verify native extension is available
 begin
-  require 'type_balancer/native'
+  require "type_balancer/native"
   puts "\nNative extension loaded successfully"
 rescue LoadError => e
   puts "\nERROR: Native extension not available!"
@@ -47,12 +51,12 @@ TEST_CASES = [
 def verify_native_implementation
   puts "\nVerifying native implementation..."
   TypeBalancer.implementation_mode = :native_struct
-  
+
   # Try to access a method that only exists in the native extension
   begin
     TypeBalancer::Native.respond_to?(:calculate_positions_native) or raise "Native method not found"
     puts "✓ Native implementation verified"
-  rescue => e
+  rescue StandardError => e
     puts "ERROR: Native implementation verification failed: #{e.message}"
     puts "The benchmark will not proceed without proper native implementation."
     exit 1
@@ -62,13 +66,13 @@ end
 def run_benchmark
   verify_native_implementation
   puts "\nRunning end-to-end benchmarks..."
-  
+
   TEST_CASES.each do |test_case|
     puts "\nBenchmarking #{test_case[:name]} (#{test_case[:size]} items)"
-    
+
     # Generate test data
     collection = generate_test_data(test_case[:size])
-    
+
     # Warm up cache and JIT
     puts "\nWarming up..."
     10.times do
@@ -98,4 +102,4 @@ def run_benchmark
   end
 end
 
-run_benchmark 
+run_benchmark

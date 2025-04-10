@@ -49,7 +49,7 @@ module TypeBalancer
           positions
         end
 
-        def calculate_positions_with_available(total_count, target_count, available_items)
+        def calculate_positions_with_available(_total_count, target_count, available_items)
           return available_items.take(target_count) if available_items.size <= target_count
 
           spacing = (available_items.size - 1).to_f / (target_count - 1)

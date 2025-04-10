@@ -48,7 +48,7 @@ module TypeBalancer
 
               # Round to nearest integer and ensure bounds
               pos = ideal_pos.round
-              [[pos, 0].max, batch.total_count - 1].min
+              pos.clamp(0, batch.total_count - 1)
             end
           end
 
