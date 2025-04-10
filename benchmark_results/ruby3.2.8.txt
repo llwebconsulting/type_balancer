@@ -1,17 +1,17 @@
 + cd /app
 + bundle exec ruby -I lib benchmark/end_to_end_benchmark.rb
-Ruby version: 3.4.2
+Ruby version: 3.2.8
 RUBY_PLATFORM: aarch64-linux
 YJIT enabled: false
 
 Running benchmarks...
 
 Benchmarking Tiny Dataset (10 items)
-ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+ruby 3.2.8 (2025-03-26 revision 13f495dc2c) [aarch64-linux]
 Warming up --------------------------------------
- Ruby Implementation     6.476k i/100ms
+ Ruby Implementation     5.815k i/100ms
 Calculating -------------------------------------
- Ruby Implementation     66.552k (± 5.7%) i/s   (15.03 μs/i) -    135.996k in   2.050038s
+ Ruby Implementation     70.626k (± 8.1%) i/s   (14.16 μs/i) -    145.375k in   2.072857s
 
 Distribution Stats:
 Video: 4 (40.0%)
@@ -19,11 +19,11 @@ Image: 3 (30.0%)
 Article: 3 (30.0%)
 
 Benchmarking Small Dataset (100 items)
-ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+ruby 3.2.8 (2025-03-26 revision 13f495dc2c) [aarch64-linux]
 Warming up --------------------------------------
- Ruby Implementation   168.000 i/100ms
+ Ruby Implementation   179.000 i/100ms
 Calculating -------------------------------------
- Ruby Implementation      1.790k (± 5.2%) i/s  (558.74 μs/i) -      3.696k in   2.070989s
+ Ruby Implementation      1.904k (± 4.8%) i/s  (525.33 μs/i) -      3.938k in   2.073542s
 
 Distribution Stats:
 Video: 34 (34.0%)
@@ -31,11 +31,11 @@ Image: 33 (33.0%)
 Article: 33 (33.0%)
 
 Benchmarking Medium Dataset (1000 items)
-ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+ruby 3.2.8 (2025-03-26 revision 13f495dc2c) [aarch64-linux]
 Warming up --------------------------------------
  Ruby Implementation     1.000 i/100ms
 Calculating -------------------------------------
- Ruby Implementation     19.043 (±10.5%) i/s   (52.51 ms/i) -     57.000 in   3.042588s
+ Ruby Implementation     20.785 (± 9.6%) i/s   (48.11 ms/i) -     62.000 in   3.018630s
 
 Distribution Stats:
 Video: 334 (33.4%)
@@ -43,11 +43,11 @@ Image: 333 (33.3%)
 Article: 333 (33.3%)
 
 Benchmarking Large Dataset (10000 items)
-ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
+ruby 3.2.8 (2025-03-26 revision 13f495dc2c) [aarch64-linux]
 Warming up --------------------------------------
  Ruby Implementation     1.000 i/100ms
 Calculating -------------------------------------
- Ruby Implementation      0.212 (± 0.0%) i/s     (4.71 s/i) -      1.000 in   4.711867s
+ Ruby Implementation      0.229 (± 0.0%) i/s     (4.37 s/i) -      1.000 in   4.371704s
 
 Distribution Stats:
 Video: 3334 (33.34%)

@@ -9,9 +9,9 @@ Running benchmarks...
 Benchmarking Tiny Dataset (10 items)
 ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
 Warming up --------------------------------------
- Ruby Implementation     6.476k i/100ms
+ Ruby Implementation     6.784k i/100ms
 Calculating -------------------------------------
- Ruby Implementation     66.552k (± 5.7%) i/s   (15.03 μs/i) -    135.996k in   2.050038s
+ Ruby Implementation     66.579k (± 4.7%) i/s   (15.02 μs/i) -    135.680k in   2.042522s
 
 Distribution Stats:
 Video: 4 (40.0%)
@@ -23,7 +23,7 @@ ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
 Warming up --------------------------------------
  Ruby Implementation   168.000 i/100ms
 Calculating -------------------------------------
- Ruby Implementation      1.790k (± 5.2%) i/s  (558.74 μs/i) -      3.696k in   2.070989s
+ Ruby Implementation      1.768k (± 6.2%) i/s  (565.69 μs/i) -      3.528k in   2.003878s
 
 Distribution Stats:
 Video: 34 (34.0%)
@@ -35,7 +35,7 @@ ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
 Warming up --------------------------------------
  Ruby Implementation     1.000 i/100ms
 Calculating -------------------------------------
- Ruby Implementation     19.043 (±10.5%) i/s   (52.51 ms/i) -     57.000 in   3.042588s
+ Ruby Implementation     19.919 (± 5.0%) i/s   (50.20 ms/i) -     60.000 in   3.023325s
 
 Distribution Stats:
 Video: 334 (33.4%)
@@ -47,7 +47,7 @@ ruby 3.4.2 (2025-02-15 revision d2930f8e7a) +PRISM [aarch64-linux]
 Warming up --------------------------------------
  Ruby Implementation     1.000 i/100ms
 Calculating -------------------------------------
- Ruby Implementation      0.212 (± 0.0%) i/s     (4.71 s/i) -      1.000 in   4.711867s
+ Ruby Implementation      0.212 (± 0.0%) i/s     (4.71 s/i) -      1.000 in   4.706258s
 
 Distribution Stats:
 Video: 3334 (33.34%)
