@@ -3,29 +3,20 @@
 require 'simplecov'
 
 SimpleCov.start do
-  # Exclude test and C code directories
+  # Exclude test, benchmark, and example directories
   add_filter '/spec/'
-  add_filter '/c_tests/'
-  add_filter '/ext/'
+  add_filter '/benchmark/'
   add_filter '/examples/'
-
-  # Explicitly exclude all C source files by extension
-  add_filter(/\.c$/)
-  add_filter(/\.h$/)
-
-  # Also exclude any Ruby files that might directly interface with C code
-  add_filter %r{/distributor\.rb$}
-  add_filter %r{/gap_fillers_ext\.rb$}
+  add_filter 'examples/quality.rb'
 
   enable_coverage :branch
 
   # Focus only on pure Ruby code
   add_group 'Core', 'lib/type_balancer'
 
-  # Disable coverage enforcement
-  # Most of the code is now in C, so Ruby coverage is less relevant
-  minimum_coverage_by_file line: 0, branch: 0
-  minimum_coverage line: 0, branch: 0
+  # Set minimum coverage requirements
+  minimum_coverage_by_file line: 80, branch: 70
+  minimum_coverage line: 85, branch: 75
 end
 
 # Ensure C extension is built and loaded

@@ -5,10 +5,11 @@ module TypeBalancer
   # It uses a distribution calculator to determine optimal positions for each type
   # and a gap filler strategy to place items in the final sequence.
   class Balancer
-    def initialize(collection, type_field: :type, types: nil)
+    def initialize(collection, type_field: :type, types: nil, distribution_calculator: nil)
       @collection = collection
       @type_field = type_field
       @types = types || extract_types
+      @distribution_calculator = distribution_calculator || Distributor
     end
 
     def call
@@ -28,7 +29,7 @@ module TypeBalancer
       @types.each_with_index do |type, index|
         items = items_by_type[type] || []
         ratio = ratios[index]
-        positions = Distributor.calculate_target_positions(total_count, items.size, ratio)
+        positions = @distribution_calculator.calculate_target_positions(total_count, items.size, ratio)
         positions_by_type[type] = positions
       end
 
