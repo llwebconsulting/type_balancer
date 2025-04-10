@@ -8,7 +8,7 @@
 [![C Coverage](https://img.shields.io/badge/c--coverage-92.4%25-brightgreen.svg)](https://github.com/llwebconsulting/type_balancer/blob/main/ext/type_balancer/README.md)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
 
-A Ruby gem for balancing types in collections by ensuring each type appears a similar number of times. Optimized for Ruby 3.2+ with YJIT support.
+A Ruby gem for balancing and distributing items of different types across a sequence while maintaining optimal spacing.
 
 ## Installation
 
@@ -32,49 +32,45 @@ $ gem install type_balancer
 
 ## Usage
 
-TypeBalancer provides a simple interface to balance types in your collections:
-
 ```ruby
-collection = [
+items = [
   { type: 'video', title: 'Video 1' },
   { type: 'image', title: 'Image 1' },
   { type: 'article', title: 'Article 1' },
-  { type: 'video', title: 'Video 2' }
+  # ... more items
 ]
 
-# Balance the collection
-balanced = TypeBalancer.balance(collection, type_field: :type)
+# Balance items by type
+balanced_items = TypeBalancer.balance(items, type_field: :type)
 ```
 
-### Performance
+## Performance Characteristics
 
-TypeBalancer is optimized for Ruby 3.2+ and takes full advantage of YJIT when available. Here are some benchmark results:
+TypeBalancer is designed to handle collections of varying sizes. Here are the current performance metrics:
 
-### Small Dataset (10 items)
-```
-Ruby with YJIT:    ~80,000 ops/sec
-Ruby without YJIT: ~70,000 ops/sec
-```
+- Small collections (10-100 items): Very fast, processing in under 1ms
+- Medium collections (1,000 items): Good performance, ~50ms processing time
+- Large collections (10,000 items): ~4.3-4.7 seconds processing time
 
-### Medium Dataset (1,000 items)
-```
-Ruby with YJIT:    ~800 ops/sec
-Ruby without YJIT: ~700 ops/sec
-```
+Performance varies slightly across Ruby versions (tested on 3.2.8, 3.3.7, and 3.4.2). YJIT provides marginal improvements (2-3%) for larger datasets.
 
-### Large Dataset (100,000 items)
-```
-Ruby with YJIT:    ~8 ops/sec
-Ruby without YJIT: ~7 ops/sec
-```
+### Recommendations
 
-Note: Performance may vary based on hardware and Ruby version.
+- For optimal performance, we recommend processing collections of up to 1,000 items at a time
+- For larger datasets, consider breaking them into smaller batches
+- If you need to process very large collections (>10,000 items), please open an issue - optimizing for larger datasets is our current priority
+
+## Features
+
+- Maintains optimal spacing between items of the same type
+- Supports custom type fields
+- Preserves original item data
+- Thread-safe
+- Zero dependencies
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`.
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
 ## Contributing
 
