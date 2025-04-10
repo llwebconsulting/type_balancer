@@ -1,9 +1,14 @@
+# Allow platform to be specified at build time
+ARG PLATFORM=linux/arm64
 ARG RUBY_VERSION
-FROM ruby:${RUBY_VERSION}-slim
+FROM --platform=${PLATFORM} ruby:${RUBY_VERSION}-slim
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     git \
+    build-essential \
+    pkg-config \
+    libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust if YJIT is enabled

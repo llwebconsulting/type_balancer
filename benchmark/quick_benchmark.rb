@@ -23,7 +23,7 @@ TEST_CASES.each do |test|
   # Create available items as 20% more than needed
   target = (test[:total] * test[:ratio]).round
   available = (target * 1.2).round
-  test[:available] = Array.new(available) { |i| i }
+  test[:available] = Array.new(available) { |i| { id: i, type: 'video', title: "Item #{i}" } }
 end
 
 def run_benchmark(test_case)

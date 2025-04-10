@@ -3,6 +3,13 @@
 # Default Ruby versions if no specific version is provided
 RUBY_VERSIONS=("3.2.8" "3.3.7" "3.4.2")
 
+# Detect platform
+if [[ $(uname -m) == "arm64" ]]; then
+    PLATFORM="linux/arm64"
+else
+    PLATFORM="linux/amd64"
+fi
+
 # Parse command line arguments
 SPECIFIC_VERSION=""
 SPECIFIC_YJIT=""
@@ -21,9 +28,13 @@ while [[ $# -gt 0 ]]; do
             SPECIFIC_YJIT="false"
             shift
             ;;
+        --platform)
+            PLATFORM="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--version|-v VERSION] [--yjit|--no-yjit]"
+            echo "Usage: $0 [--version|-v VERSION] [--yjit|--no-yjit] [--platform PLATFORM]"
             exit 1
             ;;
     esac
@@ -32,7 +43,7 @@ done
 # Array to store image tags for cleanup
 IMAGES_TO_CLEANUP=()
 
-# Clean up previous results regardless of mode
+# Clean up previous results
 rm -rf benchmark_results
 mkdir -p benchmark_results
 
@@ -45,10 +56,11 @@ run_benchmarks() {
     local image_tag="type_balancer:${ruby_version}${tag_suffix}"
     local result_file="benchmark_results/ruby${ruby_version}${tag_suffix}.txt"
 
-    echo "Building image for Ruby ${ruby_version} (YJIT: ${enable_yjit})"
+    echo "Building image for Ruby ${ruby_version} (YJIT: ${enable_yjit}, Platform: ${PLATFORM})"
     
-    # Build the Docker image with --no-cache
+    # Build the Docker image with --no-cache and platform
     if ! docker build --no-cache \
+        --build-arg PLATFORM=${PLATFORM} \
         --build-arg RUBY_VERSION=${ruby_version} \
         --build-arg ENABLE_YJIT=${enable_yjit} \
         --build-arg RUBY_YJIT_ENABLE=${yjit_flag} \
@@ -65,14 +77,11 @@ run_benchmarks() {
     # Create results directory if it doesn't exist
     mkdir -p benchmark_results
 
-    # Run both benchmarks
-    echo "Running benchmarks..."
+    # Run only end-to-end benchmark
+    echo "Running end-to-end benchmark..."
     if ! timeout 300 docker run --rm ${image_tag} /bin/bash -c "set -x && cd /app && \
-        echo 'Running end-to-end benchmark...' && \
-        bundle exec ruby -I lib benchmark/end_to_end_benchmark.rb && \
-        echo '\nRunning quick benchmark...' && \
-        bundle exec ruby -I lib benchmark/quick_benchmark.rb" > "${result_file}" 2>&1; then
-        echo "Error: Benchmarks timed out or failed"
+        bundle exec ruby -I lib benchmark/end_to_end_benchmark.rb" > "${result_file}" 2>&1; then
+        echo "Error: Benchmark timed out or failed"
         return 1
     fi
 
@@ -106,8 +115,7 @@ fi
 
 echo "All benchmarks completed. Results are in the benchmark_results directory."
 
-# --- Cleanup --- 
-
+# Cleanup
 echo "Cleaning up Docker images..."
 if [ ${#IMAGES_TO_CLEANUP[@]} -gt 0 ]; then
     docker rmi ${IMAGES_TO_CLEANUP[@]} || true
