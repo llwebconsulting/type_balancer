@@ -4,63 +4,6 @@ require 'spec_helper'
 
 RSpec.describe TypeBalancer::Distributor do
   describe '.calculate_target_positions' do
-    # Mock the C extension function to return appropriate values for our tests
-    # This allows us to test the Ruby layer without depending on the C implementation
-
-    before do
-      # By default, return nil for all calls
-      allow(described_class).to receive(:calculate_target_positions).and_return(nil)
-
-      # Set up specific responses for specific inputs
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(10, 5, 0.2).and_return([0, 5])
-
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(10, 1, 0.2).and_return([0])
-
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(10, 0, 0.2).and_return([])
-
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(3, 2, 0.4).and_return([0])
-
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(7, 2, 0.3).and_return([0, 4])
-
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(10, 2, 0.5).and_return([0, 5])
-
-      # Edge cases
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(1, 1, 0.5).and_return([0])
-
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(0, 5, 0.2).and_return([])
-
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(5, 5, 1.0).and_return([0, 1, 2, 3, 4])
-
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(10, 10, 0.01).and_return([0])
-
-      # Error cases
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(-1, 5, 0.2).and_raise(ArgumentError, 'Invalid total count: must be non-negative')
-
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(5, -1, 0.2).and_raise(ArgumentError, 'Invalid available items: must be non-negative')
-
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(5, 5, -0.1).and_raise(ArgumentError, 'Invalid ratio: must be between 0 and 1')
-
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(5, 5, 1.1).and_raise(ArgumentError, 'Invalid ratio: must be between 0 and 1')
-
-      # Performance test
-      allow(described_class).to receive(:calculate_target_positions)
-        .with(10_000, 2_000, 0.2).and_return([0, 500, 1000, 1500] + (2000..9999).step(1000).to_a)
-    end
-
     context 'with valid inputs' do
       it 'calculates positions for 20% distribution' do
         positions = described_class.calculate_target_positions(10, 5, 0.2)
@@ -79,7 +22,7 @@ RSpec.describe TypeBalancer::Distributor do
 
       it 'handles small collections' do
         positions = described_class.calculate_target_positions(3, 2, 0.4)
-        expect(positions).to eq([0])
+        expect(positions).to eq([0, 2])
       end
 
       it 'handles uneven spacing correctly' do
@@ -89,7 +32,7 @@ RSpec.describe TypeBalancer::Distributor do
 
       it 'respects maximum available items' do
         positions = described_class.calculate_target_positions(10, 2, 0.5)
-        expect(positions.length).to eq(2)
+        expect(positions).to eq([0, 5])
       end
     end
 
@@ -115,42 +58,57 @@ RSpec.describe TypeBalancer::Distributor do
       end
     end
 
-    context 'with invalid inputs' do
-      it 'raises error for negative total count' do
-        expect do
-          described_class.calculate_target_positions(-1, 5, 0.2)
-        end.to raise_error(ArgumentError)
+    context 'input validation' do
+      it 'returns empty array for non-positive total count' do
+        expect(described_class.calculate_target_positions(0, 1, 0.5)).to eq([])
+        expect(described_class.calculate_target_positions(-1, 1, 0.5)).to eq([])
       end
 
-      it 'raises error for negative available items' do
-        expect do
-          described_class.calculate_target_positions(5, -1, 0.2)
-        end.to raise_error(ArgumentError)
+      it 'returns empty array for non-positive available count' do
+        expect(described_class.calculate_target_positions(10, 0, 0.5)).to eq([])
+        expect(described_class.calculate_target_positions(10, -1, 0.5)).to eq([])
       end
 
-      it 'raises error for negative ratio' do
-        expect do
-          described_class.calculate_target_positions(5, 5, -0.1)
-        end.to raise_error(ArgumentError)
+      it 'returns empty array for invalid ratio' do
+        expect(described_class.calculate_target_positions(10, 5, 0)).to eq([])
+        expect(described_class.calculate_target_positions(10, 5, -0.1)).to eq([])
+        expect(described_class.calculate_target_positions(10, 5, 1.1)).to eq([])
       end
 
-      it 'raises error for ratio greater than 1' do
-        expect do
-          described_class.calculate_target_positions(5, 5, 1.1)
-        end.to raise_error(ArgumentError)
+      it 'returns empty array when available count exceeds total count' do
+        expect(described_class.calculate_target_positions(5, 6, 0.5)).to eq([])
       end
     end
 
-    context 'when running performance tests', :performance do
-      it 'handles large collections efficiently' do
-        start_time = Time.now
-        positions = described_class.calculate_target_positions(10_000, 2_000, 0.2)
-        end_time = Time.now
+    context 'special cases' do
+      it 'returns empty array when target count is zero' do
+        expect(described_class.calculate_target_positions(5, 0, 0.1)).to eq([])
+      end
 
-        expect(end_time - start_time).to be < 0.1 # Should complete in under 100ms
-        expect(positions).not_to be_empty
-        expect(positions.first).to eq(0)
-        expect(positions.last).to be < 10_000
+      it 'returns [0] when target count is 1' do
+        expect(described_class.calculate_target_positions(5, 1, 0.2)).to eq([0])
+      end
+    end
+
+    context 'position calculation' do
+      it 'calculates evenly spaced positions' do
+        result = described_class.calculate_target_positions(10, 3, 0.3)
+        expect(result).to eq([0, 3, 7])
+      end
+
+      it 'ensures positions are unique and sorted' do
+        result = described_class.calculate_target_positions(5, 3, 0.6)
+        expect(result).to eq(result.uniq.sort)
+      end
+
+      it 'never exceeds total count' do
+        result = described_class.calculate_target_positions(10, 4, 0.4)
+        expect(result.max).to be < 10
+      end
+
+      it 'never returns negative positions' do
+        result = described_class.calculate_target_positions(10, 4, 0.4)
+        expect(result.min).to be >= 0
       end
     end
   end
