@@ -79,7 +79,7 @@ run_benchmarks() {
 
     # Run only end-to-end benchmark
     echo "Running end-to-end benchmark..."
-    if ! timeout 300 docker run --rm ${image_tag} /bin/bash -c "set -x && cd /app && \
+    if ! timeout 600 docker run --rm ${image_tag} /bin/bash -c "set -x && cd /app && \
         bundle exec ruby -I lib benchmark/end_to_end_benchmark.rb" > "${result_file}" 2>&1; then
         echo "Error: Benchmark timed out or failed"
         return 1

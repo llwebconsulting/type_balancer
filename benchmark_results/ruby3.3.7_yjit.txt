@@ -2,16 +2,16 @@
 + bundle exec ruby -I lib benchmark/end_to_end_benchmark.rb
 Ruby version: 3.3.7
 RUBY_PLATFORM: aarch64-linux
-YJIT enabled: false
+YJIT enabled: true
 
 Running benchmarks...
 
 Benchmarking Tiny Dataset (10 items)
-ruby 3.3.7 (2025-01-15 revision be31f993d7) [aarch64-linux]
+ruby 3.3.7 (2025-01-15 revision be31f993d7) +YJIT [aarch64-linux]
 Warming up --------------------------------------
- Ruby Implementation     6.343k i/100ms
+ Ruby Implementation    12.478k i/100ms
 Calculating -------------------------------------
- Ruby Implementation     66.941k (± 6.0%) i/s   (14.94 μs/i) -    139.546k in   2.092006s
+ Ruby Implementation    131.124k (±17.0%) i/s    (7.63 μs/i) -    262.038k in   2.084375s
 
 Distribution Stats:
 Video: 4 (40.0%)
@@ -19,11 +19,11 @@ Image: 3 (30.0%)
 Article: 3 (30.0%)
 
 Benchmarking Small Dataset (100 items)
-ruby 3.3.7 (2025-01-15 revision be31f993d7) [aarch64-linux]
+ruby 3.3.7 (2025-01-15 revision be31f993d7) +YJIT [aarch64-linux]
 Warming up --------------------------------------
- Ruby Implementation   175.000 i/100ms
+ Ruby Implementation     1.886k i/100ms
 Calculating -------------------------------------
- Ruby Implementation      1.888k (± 5.1%) i/s  (529.71 μs/i) -      3.850k in   2.044860s
+ Ruby Implementation     20.898k (±12.4%) i/s   (47.85 μs/i) -     41.492k in   2.023352s
 
 Distribution Stats:
 Video: 34 (34.0%)
@@ -31,11 +31,11 @@ Image: 33 (33.0%)
 Article: 33 (33.0%)
 
 Benchmarking Medium Dataset (1000 items)
-ruby 3.3.7 (2025-01-15 revision be31f993d7) [aarch64-linux]
+ruby 3.3.7 (2025-01-15 revision be31f993d7) +YJIT [aarch64-linux]
 Warming up --------------------------------------
- Ruby Implementation     1.000 i/100ms
+ Ruby Implementation   224.000 i/100ms
 Calculating -------------------------------------
- Ruby Implementation     19.923 (±15.1%) i/s   (50.19 ms/i) -     59.000 in   3.031767s
+ Ruby Implementation      2.211k (±15.4%) i/s  (452.38 μs/i) -      6.496k in   3.033483s
 
 Distribution Stats:
 Video: 334 (33.4%)
@@ -43,11 +43,11 @@ Image: 333 (33.3%)
 Article: 333 (33.3%)
 
 Benchmarking Large Dataset (10000 items)
-ruby 3.3.7 (2025-01-15 revision be31f993d7) [aarch64-linux]
+ruby 3.3.7 (2025-01-15 revision be31f993d7) +YJIT [aarch64-linux]
 Warming up --------------------------------------
- Ruby Implementation     1.000 i/100ms
+ Ruby Implementation    25.000 i/100ms
 Calculating -------------------------------------
- Ruby Implementation      0.224 (± 0.0%) i/s     (4.47 s/i) -      1.000 in   4.467441s
+ Ruby Implementation    229.406 (±10.5%) i/s    (4.36 ms/i) -    700.000 in   3.093994s
 
 Distribution Stats:
 Video: 3334 (33.34%)
