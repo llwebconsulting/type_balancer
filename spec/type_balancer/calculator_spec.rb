@@ -179,6 +179,38 @@ RSpec.describe TypeBalancer::Calculator do
       expect(result.map { |i| i[:id] }).to eq([1, 3, 2, 4, 5])
     end
   end
+
+  describe '#calculate_target_positions' do
+    it 'handles single item type with single position' do
+      calculator = described_class.new([{ type: 'video' }])
+      items_by_type = [['video']]
+      positions = calculator.send(:calculate_target_positions, items_by_type)
+      expect(positions).to eq([[0]])
+    end
+
+    it 'handles multiple types with single positions' do
+      calculator = described_class.new([
+                                         { type: 'video' },
+                                         { type: 'image' }
+                                       ])
+      items_by_type = [['video'], ['image']]
+      positions = calculator.send(:calculate_target_positions, items_by_type)
+      expect(positions).to eq([[0], [1]])
+    end
+  end
+
+  describe '#place_items_at_positions' do
+    it 'handles nil positions for a type' do
+      calculator = described_class.new([
+                                         { type: 'video', id: 1 },
+                                         { type: 'image', id: 2 }
+                                       ])
+      items_by_type = [[{ type: 'video', id: 1 }], [{ type: 'image', id: 2 }]]
+      target_positions = [[0], nil]
+      result = calculator.send(:place_items_at_positions, items_by_type, target_positions)
+      expect(result.map { |i| i[:id] }).to eq([1, 2])
+    end
+  end
 end
 
 RSpec.describe TypeBalancer::PositionCalculator do
@@ -223,6 +255,24 @@ RSpec.describe TypeBalancer::PositionCalculator do
           available_items: [0, 2, 10]
         )
         expect(result).to be_nil
+      end
+
+      it 'handles positions exceeding total count' do
+        result = described_class.calculate_positions(
+          total_count: 5,
+          ratio: 0.4,
+          available_items: [6, 7, 8] # Invalid positions
+        )
+        expect(result).to be_nil
+      end
+
+      it 'handles single target count with multiple available items' do
+        result = described_class.calculate_positions(
+          total_count: 5,
+          ratio: 0.2, # Will result in target_count of 1
+          available_items: [1, 2, 3]
+        )
+        expect(result).to eq([1])
       end
     end
 

@@ -13,8 +13,8 @@ module TypeBalancer
     end
 
     def fill_gaps(positions)
+      return [] if positions.nil? || positions.empty?
       return positions if positions.compact.size == positions.size
-      return [] if positions.empty?
 
       remaining_items = @items_arrays.flatten
       filled_positions = positions.dup

@@ -19,6 +19,10 @@ RSpec.describe TypeBalancer::SequentialFiller do
       it 'returns an empty array' do
         expect(filler.fill_gaps([])).to eq([])
       end
+
+      it 'returns empty array for nil positions' do
+        expect(filler.fill_gaps(nil)).to eq([])
+      end
     end
 
     context 'when positions have no gaps' do
@@ -44,6 +48,22 @@ RSpec.describe TypeBalancer::SequentialFiller do
         items_arrays = [[2, 3]]
         filler = described_class.new(collection, items_arrays)
         expect(filler.fill_gaps(positions)).to eq([1, 2, 3, nil, nil])
+      end
+
+      it 'handles case when remaining items become empty mid-filling' do
+        positions = [nil, 2, nil, nil, nil]
+        items_arrays = [[3]] # Only one item to fill gaps
+        filler = described_class.new(collection, items_arrays)
+        expect(filler.fill_gaps(positions)).to eq([3, 2, nil, nil, nil])
+      end
+
+      it 'skips non-nil positions while filling' do
+        positions = [1, nil, 2, nil, 3]
+        items_arrays = [[4, 5]]
+        filler = described_class.new(collection, items_arrays)
+        result = filler.fill_gaps(positions)
+        expect(result).to eq([1, 4, 2, 5, 3])
+        # Verifies that non-nil positions (1, 2, 3) were skipped and preserved
       end
     end
   end
