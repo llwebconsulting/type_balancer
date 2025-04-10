@@ -5,6 +5,8 @@ module TypeBalancer
   # It uses a distribution calculator to determine optimal positions for each type
   # and a gap filler strategy to place items in the final sequence.
   class Balancer
+    BATCH_SIZE = 500 # Process items in batches of 500 for better performance
+
     def initialize(collection, type_field: :type, types: nil, distribution_calculator: nil)
       @collection = collection
       @type_field = type_field
@@ -15,17 +17,43 @@ module TypeBalancer
     def call
       return [] if @collection.empty?
 
-      # Group items by type
-      items_by_type = @collection.group_by { |item| get_type(item) }
+      if @collection.size <= BATCH_SIZE
+        process_single_batch(@collection)
+      else
+        process_multiple_batches
+      end
+    end
 
-      # Calculate target positions for each type
-      total_count = @collection.size
-      positions_by_type = {}
+    private
+
+    def process_single_batch(items)
+      # Group items by type
+      items_by_type = items.group_by { |item| get_type(item) }
 
       # Calculate ratios based on type order and counts
       ratios = calculate_ratios(items_by_type)
 
       # Calculate positions for each type
+      positions_by_type = calculate_positions_by_type(items_by_type, ratios, items.size)
+
+      # Map items to their balanced positions
+      balanced_items = place_items_in_positions(items_by_type, positions_by_type, items.size)
+
+      # Fill any gaps with remaining items
+      fill_gaps(balanced_items, items)
+    end
+
+    def process_multiple_batches
+      result = []
+      @collection.each_slice(BATCH_SIZE) do |batch|
+        result.concat(process_single_batch(batch))
+      end
+      result
+    end
+
+    def calculate_positions_by_type(items_by_type, ratios, total_count)
+      positions_by_type = {}
+
       @types.each_with_index do |type, index|
         items = items_by_type[type] || []
         ratio = ratios[index]
@@ -33,10 +61,12 @@ module TypeBalancer
         positions_by_type[type] = positions
       end
 
-      # Map items to their balanced positions
+      positions_by_type
+    end
+
+    def place_items_in_positions(items_by_type, positions_by_type, total_count)
       balanced_items = Array.new(total_count)
 
-      # Process types in order
       @types.each do |type|
         items = items_by_type[type] || []
         positions = positions_by_type[type] || []
@@ -49,37 +79,33 @@ module TypeBalancer
         end
       end
 
-      # Fill any gaps with remaining items
-      remaining_items = @collection.reject { |item| balanced_items.include?(item) }
-      remaining_items.each do |item|
-        empty_pos = balanced_items.index(nil)
-        break unless empty_pos
+      balanced_items
+    end
 
-        balanced_items[empty_pos] = item
+    def fill_gaps(balanced_items, original_items)
+      # Fill any gaps with remaining items
+      remaining_items = original_items.reject { |item| balanced_items.include?(item) }
+      empty_positions = balanced_items.each_index.select { |i| balanced_items[i].nil? }
+
+      empty_positions.each_with_index do |pos, idx|
+        break unless idx < remaining_items.size
+
+        balanced_items[pos] = remaining_items[idx]
       end
 
       balanced_items.compact
     end
 
-    private
-
-    def calculate_ratios(items_by_type)
-      @collection.size.to_f
-      @types.map { |type| (items_by_type[type] || []).size }
-
+    def calculate_ratios(_items_by_type)
       case @types.size
-      when 0
-        []
       when 1
         [1.0]
       when 2
-        # For two types, use their relative proportions
         [0.6, 0.4]
       else
-        # For three or more types, use the same ratios as C implementation
-        first_ratio = 0.35
-        remaining_ratio = (1.0 - first_ratio) / (@types.size - 1)
-        [first_ratio] + Array.new(@types.size - 1, remaining_ratio)
+        # First type gets 0.4, rest split remaining 0.6 evenly
+        remaining = (0.6 / (@types.size - 1).to_f).round(6)
+        [0.4] + Array.new(@types.size - 1, remaining)
       end
     end
 
@@ -94,11 +120,7 @@ module TypeBalancer
     end
 
     def extract_types
-      # Get unique types in the order they appear in the collection
-      types = @collection.map { |item| get_type(item) }.uniq
-      # Sort types to ensure consistent order: video, image, article
-      default_order = %w[video image article]
-      types.sort_by { |type| default_order.index(type) || types.size }
+      TypeBalancer.extract_types(@collection, @type_field)
     end
   end
 end
