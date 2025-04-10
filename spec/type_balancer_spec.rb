@@ -20,7 +20,7 @@ RSpec.describe TypeBalancer do
     let(:balancer_instance) { instance_double(TypeBalancer::Balancer) }
 
     context 'with default settings' do
-      subject(:balanced_items) { described_class.balance(items) }
+      subject(:balanced_items) { described_class.balance(items, types: %w[video image strip]) }
 
       before do
         # Mock how the items will be balanced
@@ -63,7 +63,9 @@ RSpec.describe TypeBalancer do
     end
 
     context 'with custom type order' do
-      subject(:balanced_items) { described_class.balance(items, type_order: %w[strip image video]) }
+      subject(:balanced_items) do
+        described_class.balance(items, types: %w[video image strip], type_order: %w[strip image video])
+      end
 
       before do
         # Mock how the items will be balanced with custom type order
@@ -97,7 +99,7 @@ RSpec.describe TypeBalancer do
     end
 
     context 'with custom type field' do
-      subject(:balanced_items) { described_class.balance(items, type_field: :category) }
+      subject(:balanced_items) { described_class.balance(items, types: %w[video image strip], type_field: :category) }
 
       let(:test_item_class) { Struct.new(:category, :name) }
       let(:items) do
@@ -227,7 +229,7 @@ RSpec.describe TypeBalancer do
 
       it 'propagates errors from type extraction' do
         expect do
-          described_class.balance(items)
+          described_class.balance(items, types: %w[video image strip])
         end.to raise_error(TypeBalancer::Error, /Cannot access type field/)
       end
     end

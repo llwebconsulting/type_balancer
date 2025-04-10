@@ -26,11 +26,8 @@ module TypeBalancer
           target_count = [target_count, available_items.size].min
 
           # Calculate spacing within available positions
-          return [available_items.first] unless target_count > 1
-
           step = (available_items.size - 1).to_f / (target_count - 1)
           return target_count.times.map { |i| available_items[(i * step).round] }
-
         end
 
         # Calculate spacing for the general case
