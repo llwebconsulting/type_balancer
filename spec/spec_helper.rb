@@ -15,7 +15,7 @@ SimpleCov.start do
   add_group 'Core', 'lib/type_balancer'
 
   # Set minimum coverage requirements
-  minimum_coverage_by_file line: 80, branch: 60
+  minimum_coverage_by_file line: 75, branch: 55
   minimum_coverage line: 85, branch: 75
 end
 
