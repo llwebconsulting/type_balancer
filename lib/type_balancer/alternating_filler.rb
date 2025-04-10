@@ -23,21 +23,24 @@ module TypeBalancer
       positions.each_with_index do |pos, idx|
         next unless pos.nil?
 
-        item = if use_primary && !@primary_items.empty?
-                 @primary_items.shift
-               elsif !@secondary_items.empty?
-                 @secondary_items.shift
-               elsif !@primary_items.empty?
-                 @primary_items.shift
-               else
-                 break
-               end
+        item = select_next_item(use_primary)
+        break unless item
 
         filled_positions[idx] = item
         use_primary = !use_primary
       end
 
       filled_positions
+    end
+
+    private
+
+    def select_next_item(use_primary)
+      if (use_primary || @secondary_items.empty?) && !@primary_items.empty?
+        @primary_items.shift
+      elsif !@secondary_items.empty?
+        @secondary_items.shift
+      end
     end
   end
 end

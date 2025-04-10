@@ -4,7 +4,39 @@ require 'spec_helper'
 
 RSpec.describe TypeBalancer::Distributor do
   describe '.calculate_target_positions' do
-    context 'with valid inputs' do
+    context 'when validating input' do
+      it 'returns empty array for non-positive total count' do
+        expect(described_class.calculate_target_positions(0, 1, 0.5)).to eq([])
+        expect(described_class.calculate_target_positions(-1, 1, 0.5)).to eq([])
+      end
+
+      it 'returns empty array for non-positive available count' do
+        expect(described_class.calculate_target_positions(10, 0, 0.5)).to eq([])
+        expect(described_class.calculate_target_positions(10, -1, 0.5)).to eq([])
+      end
+
+      it 'returns empty array for invalid ratio' do
+        expect(described_class.calculate_target_positions(10, 5, 0)).to eq([])
+        expect(described_class.calculate_target_positions(10, 5, -0.1)).to eq([])
+        expect(described_class.calculate_target_positions(10, 5, 1.1)).to eq([])
+      end
+
+      it 'returns empty array when available count exceeds total count' do
+        expect(described_class.calculate_target_positions(5, 6, 0.5)).to eq([])
+      end
+    end
+
+    context 'when handling special cases' do
+      it 'returns empty array when target count is zero' do
+        expect(described_class.calculate_target_positions(5, 0, 0.1)).to eq([])
+      end
+
+      it 'returns [0] when target count is 1' do
+        expect(described_class.calculate_target_positions(5, 1, 0.2)).to eq([0])
+      end
+    end
+
+    context 'when calculating positions' do
       it 'calculates positions for 20% distribution' do
         positions = described_class.calculate_target_positions(10, 5, 0.2)
         expect(positions).to eq([0, 5])
@@ -34,9 +66,7 @@ RSpec.describe TypeBalancer::Distributor do
         positions = described_class.calculate_target_positions(10, 2, 0.5)
         expect(positions).to eq([0, 5])
       end
-    end
 
-    context 'with edge cases' do
       it 'handles a collection of size 1' do
         positions = described_class.calculate_target_positions(1, 1, 0.5)
         expect(positions).to eq([0])
@@ -56,41 +86,7 @@ RSpec.describe TypeBalancer::Distributor do
         positions = described_class.calculate_target_positions(10, 10, 0.01)
         expect(positions).to eq([0])
       end
-    end
 
-    context 'input validation' do
-      it 'returns empty array for non-positive total count' do
-        expect(described_class.calculate_target_positions(0, 1, 0.5)).to eq([])
-        expect(described_class.calculate_target_positions(-1, 1, 0.5)).to eq([])
-      end
-
-      it 'returns empty array for non-positive available count' do
-        expect(described_class.calculate_target_positions(10, 0, 0.5)).to eq([])
-        expect(described_class.calculate_target_positions(10, -1, 0.5)).to eq([])
-      end
-
-      it 'returns empty array for invalid ratio' do
-        expect(described_class.calculate_target_positions(10, 5, 0)).to eq([])
-        expect(described_class.calculate_target_positions(10, 5, -0.1)).to eq([])
-        expect(described_class.calculate_target_positions(10, 5, 1.1)).to eq([])
-      end
-
-      it 'returns empty array when available count exceeds total count' do
-        expect(described_class.calculate_target_positions(5, 6, 0.5)).to eq([])
-      end
-    end
-
-    context 'special cases' do
-      it 'returns empty array when target count is zero' do
-        expect(described_class.calculate_target_positions(5, 0, 0.1)).to eq([])
-      end
-
-      it 'returns [0] when target count is 1' do
-        expect(described_class.calculate_target_positions(5, 1, 0.2)).to eq([0])
-      end
-    end
-
-    context 'position calculation' do
       it 'calculates evenly spaced positions' do
         result = described_class.calculate_target_positions(10, 3, 0.3)
         expect(result).to eq([0, 3, 7])

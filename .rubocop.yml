@@ -10,6 +10,7 @@ AllCops:
     - 'ext/**/*'
     - 'benchmark/**/*'
     - 'vendor/**/*'
+    - 'examples/quality.rb'
 
 Style/StringLiterals:
   EnforcedStyle: single_quotes
@@ -67,6 +68,12 @@ RSpec/MultipleMemoizedHelpers:
 
 RSpec/RepeatedExample:
   Enabled: false  # We have intentionally repeated examples
+
+RSpec/MultipleDescribes:
+  Enabled: false  # We have intentionally structured our specs this way
+
+RSpec/RepeatedExampleGroupDescription:
+  Enabled: false  # We have intentionally structured our specs this way
 
 # Disable all Capybara/RSpec cops
 Capybara/RSpec:

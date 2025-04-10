@@ -52,34 +52,48 @@ module TypeBalancer
         return [] if target_count.zero?
 
         if available_items
-          return nil if available_items.any? { |pos| pos >= total_count }
-          return available_items.take(target_count) if available_items.size <= target_count
-
-          # Distribute available positions evenly
-          if target_count == 1
-            [available_items.first]
-          else
-            # For floating point precision, calculate each position relative to total
-            indices = (0...target_count).map do |i|
-              ((available_items.size - 1) * i.fdiv(target_count - 1)).round
-            end
-            indices.map { |i| available_items[i] }
-          end
-        elsif target_count == 1
-          # Calculate evenly spaced positions
-          [0]
-        elsif ratio.round(6) == 0.666667 && total_count == 3
-          # For floating point precision, calculate each position relative to total
-          # and handle edge cases with ratio close to 2/3
-          [0, 1]
+          calculate_positions_with_available_items(total_count, target_count, available_items)
         else
-          (0...target_count).map do |i|
-            ((total_count - 1) * i.fdiv(target_count - 1)).round
-          end
+          calculate_evenly_spaced_positions(total_count, target_count, ratio)
         end
       end
 
       private
+
+      def calculate_positions_with_available_items(total_count, target_count, available_items)
+        return nil if available_items.any? { |pos| pos >= total_count }
+        return available_items.take(target_count) if available_items.size <= target_count
+
+        if target_count == 1
+          [available_items.first]
+        else
+          distribute_available_positions(available_items, target_count)
+        end
+      end
+
+      def distribute_available_positions(available_items, target_count)
+        indices = (0...target_count).map do |i|
+          ((available_items.size - 1) * i.fdiv(target_count - 1)).round
+        end
+        indices.map { |i| available_items[i] }
+      end
+
+      def calculate_evenly_spaced_positions(total_count, target_count, ratio)
+        return [0] if target_count == 1
+        return handle_two_thirds_case(total_count) if two_thirds_ratio?(ratio, total_count)
+
+        (0...target_count).map do |i|
+          ((total_count - 1) * i.fdiv(target_count - 1)).round
+        end
+      end
+
+      def two_thirds_ratio?(ratio, total_count)
+        (ratio - (2.0 / 3.0)).abs < 1e-6 && total_count == 3
+      end
+
+      def handle_two_thirds_case(_total_count)
+        [0, 1]
+      end
 
       def valid_inputs?(total_count, ratio)
         total_count >= 0 && ratio >= 0 && ratio <= 1.0
@@ -132,7 +146,7 @@ module TypeBalancer
       total_count = @items.size
       available_positions = (0...total_count).to_a
 
-      items_by_type.map.with_index do |items, index|
+      items_by_type.map.with_index do |_items, index|
         ratio = calculate_ratio(items_by_type.size, index)
         target_count = (total_count * ratio).round
 
@@ -167,32 +181,38 @@ module TypeBalancer
 
     def place_items_at_positions(items_by_type, target_positions)
       result = Array.new(@items.size)
-      used_items = []
+      used_items = place_items_at_target_positions(items_by_type, target_positions, result)
+      fill_empty_slots(result, used_items)
+      result.compact
+    end
 
-      # First pass: Place items at their target positions
+    def place_items_at_target_positions(items_by_type, target_positions, result)
+      used_items = []
       items_by_type.each_with_index do |items, type_index|
         positions = target_positions[type_index] || []
-        items.take(positions.size).each_with_index do |item, item_index|
-          pos = positions[item_index]
-          if pos && result[pos].nil?
-            result[pos] = item
-            used_items << item
-          end
-        end
+        place_type_items(items, positions, result, used_items)
       end
+      used_items
+    end
 
-      # Second pass: Collect remaining items in original order
-      remaining_items = @items.reject { |item| used_items.include?(item) }
+    def place_type_items(items, positions, result, used_items)
+      items.take(positions.size).each_with_index do |item, item_index|
+        pos = positions[item_index]
+        next unless pos && result[pos].nil?
 
-      # Fill empty slots with remaining items in order
+        result[pos] = item
+        used_items << item
+      end
+    end
+
+    def fill_empty_slots(result, used_items)
+      remaining_items = @items - used_items
       empty_slots = result.each_index.select { |i| result[i].nil? }
-      empty_slots.each_with_index do |slot, index|
-        break if index >= remaining_items.size
+      empty_slots.zip(remaining_items).each do |slot, item|
+        break unless item
 
-        result[slot] = remaining_items[index]
+        result[slot] = item
       end
-
-      result.compact
     end
   end
 end

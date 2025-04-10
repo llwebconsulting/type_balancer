@@ -134,25 +134,29 @@ RSpec.describe TypeBalancer do
 
   describe '.calculate_positions' do
     context 'with valid inputs' do
+      before do
+        allow(TypeBalancer::PositionCalculator).to receive(:calculate_positions)
+      end
+
       it 'delegates to PositionCalculator' do
-        expect(TypeBalancer::PositionCalculator).to receive(:calculate_positions).with(
+        described_class.calculate_positions(total_count: 10, ratio: 0.4)
+
+        expect(TypeBalancer::PositionCalculator).to have_received(:calculate_positions).with(
           total_count: 10,
           ratio: 0.4,
           available_items: nil
         )
-
-        described_class.calculate_positions(total_count: 10, ratio: 0.4)
       end
 
       it 'handles available items' do
         available_items = [0, 2, 4, 6]
-        expect(TypeBalancer::PositionCalculator).to receive(:calculate_positions).with(
+        described_class.calculate_positions(
           total_count: 10,
           ratio: 0.4,
           available_items: available_items
         )
 
-        described_class.calculate_positions(
+        expect(TypeBalancer::PositionCalculator).to have_received(:calculate_positions).with(
           total_count: 10,
           ratio: 0.4,
           available_items: available_items

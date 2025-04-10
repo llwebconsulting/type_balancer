@@ -168,27 +168,43 @@ RSpec.describe TypeBalancer::Calculator do
       ]
     end
 
-    it 'handles remaining items correctly' do
-      items_by_type = [
-        items.select { |i| i[:type] == 'video' },
-        items.select { |i| i[:type] == 'image' }
-      ]
-      target_positions = [[0, 2], [1]]
+    context 'with multiple types' do
+      it 'handles remaining items correctly' do
+        items_by_type = [
+          items.select { |i| i[:type] == 'video' },
+          items.select { |i| i[:type] == 'image' }
+        ]
+        target_positions = [[0, 2], [1]]
 
-      result = calculator.send(:place_items_at_positions, items_by_type, target_positions)
-      expect(result.map { |i| i[:id] }).to eq([1, 3, 2, 4, 5])
+        result = calculator.send(:place_items_at_positions, items_by_type, target_positions)
+        expect(result.map { |i| i[:id] }).to eq([1, 3, 2, 4, 5])
+      end
+    end
+
+    context 'with single type' do
+      it 'handles single item type with single position' do
+        calculator = described_class.new([{ type: 'video' }])
+        items_by_type = [['video']]
+        positions = calculator.send(:calculate_target_positions, items_by_type)
+        expect(positions).to eq([[0]])
+      end
+    end
+
+    context 'with multiple types and single positions' do
+      it 'handles multiple types with single positions' do
+        calculator = described_class.new([
+                                           { type: 'video' },
+                                           { type: 'image' }
+                                         ])
+        items_by_type = [['video'], ['image']]
+        positions = calculator.send(:calculate_target_positions, items_by_type)
+        expect(positions).to eq([[0], [1]])
+      end
     end
   end
 
   describe '#calculate_target_positions' do
-    it 'handles single item type with single position' do
-      calculator = described_class.new([{ type: 'video' }])
-      items_by_type = [['video']]
-      positions = calculator.send(:calculate_target_positions, items_by_type)
-      expect(positions).to eq([[0]])
-    end
-
-    it 'handles multiple types with single positions' do
+    it 'calculates positions for even distribution' do
       calculator = described_class.new([
                                          { type: 'video' },
                                          { type: 'image' }
@@ -196,6 +212,17 @@ RSpec.describe TypeBalancer::Calculator do
       items_by_type = [['video'], ['image']]
       positions = calculator.send(:calculate_target_positions, items_by_type)
       expect(positions).to eq([[0], [1]])
+    end
+
+    it 'handles uneven distribution' do
+      calculator = described_class.new([
+                                         { type: 'video' },
+                                         { type: 'video' },
+                                         { type: 'image' }
+                                       ])
+      items_by_type = [%w[video video], ['image']]
+      positions = calculator.send(:calculate_target_positions, items_by_type)
+      expect(positions).to eq([[0, 2], [1]])
     end
   end
 
