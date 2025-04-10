@@ -7,7 +7,16 @@
 [![Ruby Coverage](https://img.shields.io/badge/ruby--coverage-78.57%25-yellow.svg)](https://github.com/llwebconsulting/type_balancer/blob/main/coverage/index.html)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
 
-A Ruby gem for balancing and distributing items of different types across a sequence while maintaining optimal spacing.
+TypeBalancer is a sophisticated Ruby gem designed to solve the challenge of distributing different types of content across a sequence while maintaining optimal spacing and ratios. It's particularly useful for:
+
+- **Content Management Systems**: Ensure a balanced mix of content types (videos, articles, images) in feeds
+- **E-commerce**: Distribute different product categories evenly across search results
+- **News Feeds**: Balance different news categories while maintaining relevance
+- **Recommendation Systems**: Mix various content types while preserving user preferences
+
+The gem uses advanced distribution algorithms to ensure that items are not only balanced by type but also maintain optimal spacing, preventing clusters of similar content while respecting specified ratios.
+
+[View Examples & Quality Tests](docs/quality.md) | [View Benchmark Results](docs/benchmarks/README.md)
 
 ## Installation
 
@@ -71,11 +80,64 @@ Performance has been thoroughly tested across Ruby versions (3.2.8, 3.3.7, and 3
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bin/setup` to install dependencies. Then:
+
+1. Run `rake spec` to run the test suite
+2. Run `bundle exec ruby examples/quality.rb` to run the quality checks
+3. Run `rake rubocop` to check code style
+4. Run `bin/console` for an interactive prompt
+
+For more information about the quality script and its uses, see our [quality script documentation](docs/quality.md).
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/llwebconsulting/type_balancer. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/llwebconsulting/type_balancer/blob/main/CODE_OF_CONDUCT.md).
+We welcome contributions to TypeBalancer! Here's how you can help:
+
+1. **Fork the Repository**
+   - Visit the [TypeBalancer repository](https://github.com/llwebconsulting/type_balancer)
+   - Click the "Fork" button in the top right
+   - Clone your fork locally: `git clone git@github.com:your-username/type_balancer.git`
+
+2. **Create a Feature Branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+3. **Make Your Changes**
+   - Write tests for new functionality
+   - Ensure all tests pass: `rake spec`
+   - Run quality checks: `bundle exec ruby examples/quality.rb`
+   - Check code style: `rake rubocop`
+   - Update documentation as needed
+
+4. **Commit Your Changes**
+   ```bash
+   git commit -am 'feat: add some feature'
+   ```
+   Please follow [conventional commits](https://www.conventionalcommits.org/) for commit messages.
+
+5. **Push to Your Fork**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+6. **Create a Pull Request**
+   - Visit your fork on GitHub
+   - Click "New Pull Request"
+   - Ensure the base branch is `main`
+   - Provide a clear description of your changes
+   - Link any relevant issues
+
+### Pull Request Requirements
+- All CI checks must pass
+- Test coverage should be maintained or improved
+- Documentation should be updated as needed
+- Code should follow the project's style guide
+- Quality script should pass without new issues
+
+For more detailed information about our development process and tools:
+- [Quality Script Documentation](docs/quality.md)
+- [Benchmark Documentation](docs/benchmarks/README.md)
 
 ## License
 
