@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.2] - 2024-04-11
+
+- Re-release of 0.1.1 due to RubyGems.org publishing issue
+- No functional changes from 0.1.1
+
 ## [0.1.1] - 2024-03-XX
 
 ### Refactoring
