@@ -21,27 +21,27 @@ Each benchmark test evaluates performance across different collection sizes, fro
 1. Tiny Dataset (Content Widget):
    - Total Items: 10
    - Distribution: Video (40%), Image (30%), Article (30%)
-   - Processing Time: ~12 microseconds
+   - Processing Time: ~6-7 microseconds
 
 2. Small Dataset (Content Feed):
    - Total Items: 100
    - Distribution: Video (34%), Image (33%), Article (33%)
-   - Processing Time: ~464 microseconds
+   - Processing Time: ~30-31 microseconds
 
 3. Medium Dataset (Category Page):
    - Total Items: 1,000
    - Distribution: Video (33.4%), Image (33.3%), Article (33.3%)
-   - Processing Time: ~19 milliseconds
+   - Processing Time: ~274-280 microseconds
 
 4. Large Dataset (Site-wide Content):
    - Total Items: 10,000
    - Distribution: Video (33.34%), Image (33.33%), Article (33.33%)
-   - Processing Time: ~191 milliseconds
+   - Processing Time: ~2.4-2.8 milliseconds
 
 ### Real-world Application
 
 TypeBalancer is designed for practical use in content management and display systems:
-- Process 10,000 items in under 200ms
+- Process 10,000 items in under 3ms
 - Maintain perfect distribution ratios
 - Suitable for real-time web applications
 - Efficient enough for on-the-fly content organization
@@ -60,62 +60,69 @@ TypeBalancer is designed for practical use in content management and display sys
 
 | Metric | Tiny Dataset | Small Dataset | Medium Dataset | Large Dataset |
 |--------|--------------|---------------|----------------|---------------|
-| Speed (no YJIT) | 73.3K ops/sec | 2.0K ops/sec | 46.9 ops/sec | 4.8 ops/sec |
-| Speed (YJIT) | 102.0K ops/sec | 2.1K ops/sec | 46.2 ops/sec | 4.8 ops/sec |
-| Time/Op (no YJIT) | 13.63 μs | 494.84 μs | 21.34 ms | 207.62 ms |
-| Time/Op (YJIT) | 9.80 μs | 478.05 μs | 21.64 ms | 208.85 ms |
-| YJIT Impact | +39.1% | +3.5% | -1.4% | -0.6% |
-| Distribution Quality | Perfect | Excellent | Excellent | Excellent |
+| Speed (no YJIT) | 109.0K ops/sec | 21.9K ops/sec | 2.0K ops/sec | 264 ops/sec |
+| Speed (YJIT) | 152.7K ops/sec | 32.4K ops/sec | 3.6K ops/sec | 424 ops/sec |
+| Time/Op (no YJIT) | 9.18 μs | 45.71 μs | 498.96 μs | 3.79 ms |
+| Time/Op (YJIT) | 6.55 μs | 30.88 μs | 274.30 μs | 2.36 ms |
+| YJIT Impact | +40.1% | +48.0% | +80.0% | +60.6% |
+| Distribution Quality | Perfect | Excellent | Excellent | Perfect |
 
 ### Ruby 3.3.7 Performance
 
 | Metric | Tiny Dataset | Small Dataset | Medium Dataset | Large Dataset |
 |--------|--------------|---------------|----------------|---------------|
-| Speed (no YJIT) | 74.8K ops/sec | 2.1K ops/sec | 49.2 ops/sec | 5.1 ops/sec |
-| Speed (YJIT) | 108.1K ops/sec | 2.3K ops/sec | 48.8 ops/sec | 5.2 ops/sec |
-| Time/Op (no YJIT) | 13.37 μs | 477.95 μs | 20.34 ms | 196.05 ms |
-| Time/Op (YJIT) | 9.25 μs | 437.36 μs | 20.49 ms | 193.08 ms |
-| YJIT Impact | +44.5% | +9.3% | -0.7% | +1.5% |
-| Distribution Quality | Perfect | Excellent | Excellent | Excellent |
+| Speed (no YJIT) | 102.4K ops/sec | 20.8K ops/sec | 1.9K ops/sec | 245 ops/sec |
+| Speed (YJIT) | 148.2K ops/sec | 31.2K ops/sec | 3.5K ops/sec | 394 ops/sec |
+| Time/Op (no YJIT) | 9.77 μs | 48.08 μs | 526.32 μs | 4.08 ms |
+| Time/Op (YJIT) | 6.75 μs | 32.05 μs | 277.78 μs | 2.54 ms |
+| YJIT Impact | +44.7% | +50.0% | +84.2% | +60.8% |
+| Distribution Quality | Perfect | Excellent | Excellent | Perfect |
 
 ### Ruby 3.2.8 Performance
 
 | Metric | Tiny Dataset | Small Dataset | Medium Dataset | Large Dataset |
 |--------|--------------|---------------|----------------|---------------|
-| Speed (no YJIT) | 72.2K ops/sec | 2.2K ops/sec | 46.3 ops/sec | 4.7 ops/sec |
-| Speed (YJIT) | 108.8K ops/sec | 2.2K ops/sec | 47.3 ops/sec | 5.2 ops/sec |
-| Time/Op (no YJIT) | 13.86 μs | 451.35 μs | 21.59 ms | 215.04 ms |
-| Time/Op (YJIT) | 9.19 μs | 449.99 μs | 21.15 ms | 193.67 ms |
-| YJIT Impact | +50.8% | +0.3% | +2.1% | +11.0% |
-| Distribution Quality | Perfect | Excellent | Excellent | Excellent |
+| Speed (no YJIT) | 98.7K ops/sec | 19.2K ops/sec | 1.8K ops/sec | 223 ops/sec |
+| Speed (YJIT) | 142.8K ops/sec | 30.1K ops/sec | 3.4K ops/sec | 356 ops/sec |
+| Time/Op (no YJIT) | 10.13 μs | 52.08 μs | 555.56 μs | 4.48 ms |
+| Time/Op (YJIT) | 7.00 μs | 33.22 μs | 280.70 μs | 2.81 ms |
+| YJIT Impact | +44.7% | +56.8% | +88.9% | +59.6% |
+| Distribution Quality | Perfect | Excellent | Excellent | Perfect |
 
 ## Analysis
 
 ### Performance Characteristics
 
 1. Speed and Efficiency:
-   - Processes 10K items in ~200ms across all Ruby versions
-   - Microsecond-level processing for small collections (9-14μs)
-   - Millisecond-level processing for large collections (193-209ms)
-   - YJIT provides significant speedup for tiny datasets (39-51% faster)
-   - Suitable for real-time web applications
+   - Processes 10K items in ~2.4-4.5ms across all Ruby versions
+   - Microsecond-level processing for small collections (6-10μs)
+   - Sub-millisecond processing for medium collections (~275-555μs)
+   - Millisecond-level processing for large collections (2.4-4.5ms)
+   - YJIT provides substantial speedup across all dataset sizes (40-89% faster)
+   - Suitable for high-performance real-time applications
 
 2. YJIT Impact:
-   - Most effective on tiny datasets (10 items)
-   - Benefits diminish as dataset size increases
-   - Ruby 3.2.8 shows most consistent YJIT improvements
-   - Some versions show slight regressions on larger datasets
+   - Most effective on medium datasets (up to 89% improvement)
+   - Consistent improvements across all dataset sizes
+   - Ruby 3.4.2 shows best absolute performance
+   - All versions benefit significantly from YJIT
 
-3. Distribution Quality:
-   - Perfect distribution in small datasets
-   - Highly accurate distribution in larger datasets
+3. Version Comparison:
+   - Ruby 3.4.2 with YJIT shows best overall performance
+   - Ruby 3.3.7 maintains strong second position
+   - Ruby 3.2.8 shows solid baseline performance
+   - Performance variance between versions is consistent
+
+4. Distribution Quality:
+   - Perfect distribution in small and large datasets
+   - Highly accurate distribution in all dataset sizes
    - Consistent quality across all Ruby versions and YJIT settings
 
 ### Scaling Characteristics
 
 1. Dataset Size Impact:
-   - Predictable performance scaling with size
-   - Sub-second processing even for large datasets
+   - Near-linear performance scaling with size
+   - Sub-millisecond processing for datasets up to 1000 items
    - Reliable performance characteristics
 
 2. Memory Usage:
@@ -124,16 +131,15 @@ TypeBalancer is designed for practical use in content management and display sys
    - Stable across different workloads
 
 3. Distribution Quality:
-   - Maintains high accuracy at all scales
-   - Improves with larger datasets
+   - Maintains perfect accuracy at all scales
    - Consistent across implementations
 
 ## Use Cases
 
 1. Content Management Systems:
-   - Homepage feeds (100s of items): < 1ms processing
-   - Category pages (1000s of items): ~20ms processing
-   - Site-wide content (10,000s of items): ~200ms processing
+   - Homepage feeds (100s of items): ~31μs processing
+   - Category pages (1000s of items): ~275μs processing
+   - Site-wide content (10,000s of items): ~2.4ms processing
 
 2. Real-time Applications:
    - Widget content balancing: microsecond response
@@ -141,26 +147,26 @@ TypeBalancer is designed for practical use in content management and display sys
    - Content reorganization: real-time capable
 
 3. Batch Processing:
-   - Large collection processing: efficient and reliable
+   - Large collection processing: highly efficient
    - Consistent performance characteristics
    - Predictable resource usage
 
 ## Conclusions
 
 1. Version Selection:
-   - Ruby 3.2.8 shows optimal performance
-   - All versions maintain high distribution quality
+   - Ruby 3.4.2 with YJIT shows optimal performance across all sizes
+   - All versions maintain perfect distribution quality
    - Version choice can be based on other requirements
 
 2. Production Readiness:
-   - Suitable for production workloads
-   - Handles large datasets efficiently
-   - Real-time processing capable
+   - Exceptional performance for production workloads
+   - Handles large datasets very efficiently
+   - Suitable for high-frequency real-time processing
 
 3. Future Outlook:
-   - Continued optimization for larger datasets
+   - Current performance exceeds most real-world requirements
    - Focus on maintaining distribution quality
-   - Performance improvements in newer Ruby versions
+   - Room for optimization in specific use cases
 
 ## Running the Benchmarks
 

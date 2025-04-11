@@ -1,126 +1,103 @@
 # frozen_string_literal: true
 
-module TypeBalancer
-  # Main class responsible for balancing items in a collection based on their types.
-  # It uses a distribution calculator to determine optimal positions for each type
-  # and a gap filler strategy to place items in the final sequence.
-  class Balancer
-    BATCH_SIZE = 500 # Process items in batches of 500 for better performance
+require_relative 'ratio_calculator'
+require_relative 'batch_processing'
+require_relative 'position_calculator'
 
-    def initialize(collection, type_field: :type, types: nil, distribution_calculator: nil)
-      @collection = collection
-      @type_field = type_field
-      @types = types || extract_types
-      @distribution_calculator = distribution_calculator || Distributor
+module TypeBalancer
+  # Handles balancing of items across batches based on type ratios
+  class Balancer
+    # Initialize a new Balancer instance
+    #
+    # @param types [Array<String>, nil] Optional types
+    # @param type_order [Array<String>, nil] Optional order of types
+    def initialize(types = nil, type_order: nil)
+      @types = Array(types) if types
+      @type_order = type_order
+      validate_types! if @types
     end
 
-    def call
-      return [] if @collection.empty?
+    # Main entry point for balancing items
+    #
+    # @param collection [Array] Items to balance
+    # @return [Array] Balanced items
+    def call(collection)
+      validate_collection!(collection)
+      items_by_type = group_items_by_type(collection)
+      validate_types_in_collection!(items_by_type)
 
-      if @collection.size <= BATCH_SIZE
-        process_single_batch(@collection)
-      else
-        process_multiple_batches
+      target_counts = calculate_target_counts(items_by_type)
+      available_positions = (0...collection.size).to_a
+
+      result = Array.new(collection.size)
+      sorted_types = sort_types(items_by_type.keys)
+
+      sorted_types.each do |type|
+        items = items_by_type[type]
+        target_count = target_counts[type]
+        ratio = target_count.to_f / collection.size
+        positions = PositionCalculator.calculate_positions(
+          total_count: collection.size,
+          ratio: ratio,
+          available_items: available_positions
+        )
+
+        positions.each_with_index do |pos, idx|
+          result[pos] = items[idx]
+        end
+
+        # Remove used positions from available positions
+        available_positions -= positions
       end
+
+      result.compact
     end
 
     private
 
-    def process_single_batch(items)
-      # Group items by type
-      items_by_type = items.group_by { |item| get_type(item) }
-
-      # Calculate ratios based on type order and counts
-      ratios = calculate_ratios(items_by_type)
-
-      # Calculate positions for each type
-      positions_by_type = calculate_positions_by_type(items_by_type, ratios, items.size)
-
-      # Map items to their balanced positions
-      balanced_items = place_items_in_positions(items_by_type, positions_by_type, items.size)
-
-      # Fill any gaps with remaining items
-      fill_gaps(balanced_items, items)
+    def validate_types!
+      raise ArgumentError, 'Types cannot be empty' if @types.empty?
     end
 
-    def process_multiple_batches
-      result = []
-      @collection.each_slice(BATCH_SIZE) do |batch|
-        result.concat(process_single_batch(batch))
-      end
-      result
+    def validate_collection!(collection)
+      raise ArgumentError, 'Collection cannot be empty' if collection.empty?
     end
 
-    def calculate_positions_by_type(items_by_type, ratios, total_count)
-      positions_by_type = {}
+    def validate_types_in_collection!(items_by_type)
+      return unless @types
 
-      @types.each_with_index do |type, index|
-        items = items_by_type[type] || []
-        ratio = ratios[index]
-        positions = @distribution_calculator.calculate_target_positions(total_count, items.size, ratio)
-        positions_by_type[type] = positions
-      end
-
-      positions_by_type
+      invalid_types = items_by_type.keys - @types
+      raise TypeBalancer::Error, "Invalid type(s): #{invalid_types.join(', ')}" if invalid_types.any?
     end
 
-    def place_items_in_positions(items_by_type, positions_by_type, total_count)
-      balanced_items = Array.new(total_count)
-
-      @types.each do |type|
-        items = items_by_type[type] || []
-        positions = positions_by_type[type] || []
-
-        items.each_with_index do |item, index|
-          pos = positions[index]
-          next unless pos && pos < total_count && balanced_items[pos].nil?
-
-          balanced_items[pos] = item
-        end
-      end
-
-      balanced_items
-    end
-
-    def fill_gaps(balanced_items, original_items)
-      # Fill any gaps with remaining items
-      remaining_items = original_items.reject { |item| balanced_items.include?(item) }
-      empty_positions = balanced_items.each_index.select { |i| balanced_items[i].nil? }
-
-      empty_positions.each_with_index do |pos, idx|
-        break unless idx < remaining_items.size
-
-        balanced_items[pos] = remaining_items[idx]
-      end
-
-      balanced_items.compact
-    end
-
-    def calculate_ratios(_items_by_type)
-      case @types.size
-      when 1
-        [1.0]
-      when 2
-        [0.6, 0.4]
-      else
-        # First type gets 0.4, rest split remaining 0.6 evenly
-        remaining = (0.6 / (@types.size - 1).to_f).round(6)
-        [0.4] + Array.new(@types.size - 1, remaining)
+    def group_items_by_type(collection)
+      collection.group_by do |item|
+        extract_type(item)
       end
     end
 
-    def get_type(item)
-      if item.respond_to?(@type_field)
-        item.send(@type_field)
-      elsif item.respond_to?(:[])
-        item[@type_field] || item[@type_field.to_s]
-      else
-        raise Error, "Cannot access type field '#{@type_field}' on item #{item}"
+    def extract_type(item)
+      return item[:type] || item['type'] || raise(TypeBalancer::Error, 'Cannot access type field') if item.is_a?(Hash)
+
+      begin
+        item.type
+      rescue NoMethodError
+        raise TypeBalancer::Error, 'Cannot access type field'
       end
     end
 
-    def extract_types
-      TypeBalancer.extract_types(@collection, @type_field)
+    def calculate_target_counts(items_by_type)
+      items_by_type.values.sum(&:size)
+      items_by_type.transform_values(&:size)
+    end
+
+    def sort_types(types)
+      return types.sort unless @type_order
+
+      types.sort_by do |type|
+        idx = @type_order.index(type)
+        idx || Float::INFINITY
+      end
     end
   end
 end

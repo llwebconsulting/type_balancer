@@ -22,7 +22,7 @@ def generate_test_data(size)
   end
 end
 
-# More granular test cases
+# Test cases with different dataset sizes
 TEST_CASES = [
   { name: "Tiny Dataset", size: 10 },
   { name: "Small Dataset", size: 100 },
@@ -32,6 +32,7 @@ TEST_CASES = [
 
 def run_benchmark
   puts "\nRunning benchmarks..."
+  types = %w[video image article]
 
   TEST_CASES.each do |test_case|
     puts "\nBenchmarking #{test_case[:name]} (#{test_case[:size]} items)"
@@ -54,9 +55,11 @@ def run_benchmark
 
     # Print distribution stats for verification
     result = TypeBalancer.balance(collection, type_field: :type)
+    # Flatten batches into a single array
+    flattened_result = result.flatten
     puts "\nDistribution Stats:"
-    %w[video image article].each do |type|
-      count = result.count { |i| i[:type] == type }
+    types.each do |type|
+      count = flattened_result.count { |i| i[:type] == type }
       puts "#{type.capitalize}: #{count} (#{(count.to_f / test_case[:size] * 100).round(2)}%)"
     end
   end

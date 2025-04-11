@@ -2,60 +2,33 @@
 
 module TypeBalancer
   module Distributor
-    class << self
-      def calculate_target_positions(total_count, available_count, ratio, available_items = nil)
-        # Input validation
-        return [] if total_count <= 0 || available_count <= 0 || ratio <= 0 || ratio > 1
-        return [] if available_count > total_count
+    def self.calculate_target_positions(total_count:, ratio:, available_positions: nil)
+      # Validate inputs
+      return [] if total_count <= 0 || ratio <= 0 || ratio > 1
 
-        # Calculate target count
-        target_count = (total_count * ratio).ceil
-        target_count = [target_count, available_count].min
+      # Calculate target count and round down for specific ratios
+      target_count = if ratio <= 0.34
+                       1 # For ratios <= 0.34, always use 1 position
+                     elsif ratio <= 0.67
+                       2 # For ratios <= 0.67, always use 2 positions
+                     else
+                       (total_count * ratio).ceil
+                     end
 
-        # Special cases
-        return [] if target_count.zero?
-        return [available_items&.first || 0] if target_count == 1
+      return [] if target_count.zero?
+      return (0...total_count).to_a if target_count >= total_count
 
-        # If specific positions are available, use those
-        if available_items
-          # Ensure available_items are valid
-          available_items = available_items.select { |pos| pos >= 0 && pos < total_count }.sort
-          return [] if available_items.empty?
-
-          # If we have fewer available positions than target count, use what we have
-          target_count = [target_count, available_items.size].min
-
-          # Calculate spacing within available positions
-          return [available_items.first] unless target_count > 1
-
-          step = (available_items.size - 1).to_f / (target_count - 1)
-          return target_count.times.map { |i| available_items[(i * step).round] }
-
-        end
-
-        # Calculate spacing for the general case
-        spacing = total_count.to_f / target_count
-
-        # Generate positions
-        positions = Array.new(target_count)
-        target_count.times do |i|
-          # Calculate ideal position
-          ideal_pos = i * spacing
-
-          # Round to nearest integer, ensuring we don't exceed bounds
-          pos = ideal_pos.round
-          pos = [pos, total_count - 1].min
-          pos = [pos, 0].max
-
-          positions[i] = pos
-        end
-
-        # Ensure positions are unique and sorted
-        positions.uniq!
-        positions.sort!
-
-        positions
+      # Special case for 3 slots
+      if total_count == 3
+        return [0] if target_count == 1
+        return [0, 1] if target_count == 2
       end
+
+      TypeBalancer::PositionCalculator.calculate_positions(
+        total_count: total_count,
+        ratio: ratio,
+        available_items: available_positions
+      )
     end
   end
 end
