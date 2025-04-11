@@ -60,12 +60,12 @@ balanced_items = TypeBalancer.balance(items, type_field: :type)
 
 TypeBalancer is designed to handle collections of varying sizes efficiently. Here are the current performance metrics:
 
-- Tiny collections (10 items): Microsecond-level processing (9-14μs)
-- Small collections (100 items): Sub-millisecond processing (~450-500μs)
-- Medium collections (1,000 items): Fast processing (~20-21ms)
-- Large collections (10,000 items): Efficient processing (~193-209ms)
+- Tiny collections (10 items): Microsecond-level processing (6-10μs)
+- Small collections (100 items): Sub-millisecond processing (30-52μs)
+- Medium collections (1,000 items): Fast processing (274-555μs)
+- Large collections (10,000 items): Efficient processing (2.4-4.5ms)
 
-Performance has been thoroughly tested across Ruby versions (3.2.8, 3.3.7, and 3.4.2). YJIT provides significant improvements for small datasets (up to 51% faster for tiny collections) with varying impact on larger datasets. For detailed benchmarks across Ruby versions and YJIT configurations, see our [benchmark documentation](docs/benchmarks/README.md).
+Performance has been thoroughly tested across Ruby versions (3.2.8, 3.3.7, and 3.4.2). YJIT provides significant improvements (40-89% faster) with the greatest impact on medium-sized datasets. For detailed benchmarks across Ruby versions and YJIT configurations, see our [benchmark documentation](docs/benchmarks/README.md).
 
 ### Recommendations
 
