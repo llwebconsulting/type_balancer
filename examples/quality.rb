@@ -273,7 +273,7 @@ class QualityChecker
     puts "\n#{'-' * 50}"
     puts 'Quality Check Summary:'
     puts "Examples Run: #{@examples_run}"
-    puts "Examples Passed: #{@examples_passed}"
+    puts "Expectations Passed: #{@examples_passed}"
 
     if @issues.empty?
       puts "\nAll quality checks passed! ✓"

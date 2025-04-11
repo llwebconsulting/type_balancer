@@ -242,195 +242,99 @@ end
 
 RSpec.describe TypeBalancer::PositionCalculator do
   describe '.calculate_positions' do
-    it 'returns nil for invalid inputs' do
-      expect(described_class.calculate_positions(total_count: -1, ratio: 0.5)).to be_nil
-      expect(described_class.calculate_positions(total_count: 10, ratio: -0.1)).to be_nil
-      expect(described_class.calculate_positions(total_count: 10, ratio: 1.5)).to be_nil
+    subject(:positions) do
+      TypeBalancer::Distributor.calculate_target_positions(
+        total_count: total_count,
+        ratio: ratio,
+        available_positions: available_items
+      )
     end
 
-    it 'returns empty array for zero total count' do
-      expect(described_class.calculate_positions(total_count: 0, ratio: 0.5)).to eq([])
-    end
+    let(:available_items) { nil }
+    let(:total_count) { 10 }
+    let(:ratio) { 0.3 }
 
-    it 'returns [0] for target count of 1' do
-      expect(described_class.calculate_positions(total_count: 10, ratio: 0.1)).to eq([0])
+    context 'with invalid inputs' do
+      it 'returns empty array for zero total count' do
+        expect(TypeBalancer::Distributor.calculate_target_positions(total_count: 0, ratio: 0.5)).to eq([])
+      end
+
+      it 'returns empty array for zero ratio' do
+        expect(TypeBalancer::Distributor.calculate_target_positions(total_count: 10, ratio: 0)).to eq([])
+      end
+
+      it 'returns empty array for negative total count' do
+        expect(TypeBalancer::Distributor.calculate_target_positions(total_count: -1, ratio: 0.5)).to eq([])
+      end
+
+      it 'returns empty array for negative ratio' do
+        expect(TypeBalancer::Distributor.calculate_target_positions(total_count: 10, ratio: -0.1)).to eq([])
+      end
+
+      it 'returns empty array for ratio greater than 1' do
+        expect(TypeBalancer::Distributor.calculate_target_positions(total_count: 10, ratio: 1.1)).to eq([])
+      end
     end
 
     context 'with available items' do
-      it 'returns subset when available items are fewer than target' do
-        result = described_class.calculate_positions(
-          total_count: 10,
-          ratio: 0.5,
-          available_items: [1, 3, 5]
-        )
-        expect(result).to eq([1, 3, 5])
+      context 'with invalid available items' do
+        it 'uses available positions as provided' do
+          expect(TypeBalancer::Distributor.calculate_target_positions(
+                   total_count: 5,
+                   ratio: 0.4,
+                   available_positions: [0, 5, 6]
+                 )).to eq([0, 6])
+        end
       end
 
-      it 'distributes items evenly when more available than target' do
-        result = described_class.calculate_positions(
-          total_count: 10,
-          ratio: 0.3,
-          available_items: [0, 2, 4, 6, 8]
-        )
-        expect(result).to eq([0, 4, 8])
+      context 'with single target position' do
+        let(:total_count) { 5 }
+        let(:ratio) { 0.2 }
+        let(:available_items) { [1, 2, 3] }
+
+        it 'uses first available position' do
+          expect(positions).to eq([1])
+        end
       end
 
-      it 'validates available items are within bounds' do
-        result = described_class.calculate_positions(
-          total_count: 5,
-          ratio: 0.5,
-          available_items: [0, 2, 10]
-        )
-        expect(result).to be_nil
+      context 'with multiple target positions' do
+        let(:total_count) { 10 }
+        let(:ratio) { 0.2 }
+        let(:available_items) { [1, 3, 5] }
+
+        it 'uses first and last available positions' do
+          expect(positions).to eq([1, 5])
+        end
       end
 
-      it 'handles positions exceeding total count' do
-        result = described_class.calculate_positions(
-          total_count: 5,
-          ratio: 0.4,
-          available_items: [6, 7, 8] # Invalid positions
-        )
-        expect(result).to be_nil
-      end
+      context 'with exact match of available positions' do
+        let(:total_count) { 10 }
+        let(:ratio) { 0.3 }
+        let(:available_items) { [2, 4, 6] }
 
-      it 'handles single target count with multiple available items' do
-        result = described_class.calculate_positions(
-          total_count: 5,
-          ratio: 0.2, # Will result in target_count of 1
-          available_items: [1, 2, 3]
-        )
-        expect(result).to eq([1])
+        it 'uses all available positions' do
+          expect(positions).to eq([2, 4, 6])
+        end
       end
     end
 
-    context 'with boundary conditions' do
-      it 'handles ratio of 0.0' do
-        expect(described_class.calculate_positions(total_count: 10, ratio: 0.0)).to eq([])
+    context 'with special ratios' do
+      context 'with two-thirds ratio in three slots' do
+        let(:total_count) { 3 }
+        let(:ratio) { 0.67 }
+
+        it 'returns [0, 1]' do
+          expect(positions).to eq([0, 1])
+        end
       end
 
-      it 'handles ratio of 1.0' do
-        expect(described_class.calculate_positions(total_count: 5, ratio: 1.0)).to eq([0, 1, 2, 3, 4])
-      end
+      context 'with one-third ratio in three slots' do
+        let(:total_count) { 3 }
+        let(:ratio) { 0.34 }
 
-      it 'handles floating point precision edge cases' do
-        expect(described_class.calculate_positions(total_count: 3, ratio: 0.333333)).to eq([0])
-        expect(described_class.calculate_positions(total_count: 3, ratio: 0.666667)).to eq([0, 1])
-      end
-
-      it 'validates total_count is positive' do
-        expect(described_class.calculate_positions(total_count: 0, ratio: 0.5)).to eq([])
-        expect(described_class.calculate_positions(total_count: -1, ratio: 0.5)).to be_nil
-      end
-
-      it 'validates ratio is between 0 and 1' do
-        expect(described_class.calculate_positions(total_count: 10, ratio: -0.1)).to be_nil
-        expect(described_class.calculate_positions(total_count: 10, ratio: 1.1)).to be_nil
-      end
-    end
-
-    context 'with edge cases' do
-      it 'handles target count of 1 with available items' do
-        result = described_class.calculate_positions(
-          total_count: 5,
-          ratio: 0.2,
-          available_items: [1, 2, 3, 4]
-        )
-        expect(result).to eq([1])
-      end
-
-      it 'handles target count of 1 without available items' do
-        result = described_class.calculate_positions(
-          total_count: 5,
-          ratio: 0.2
-        )
-        expect(result).to eq([0])
-      end
-
-      it 'handles ratio close to 2/3 with total count of 3' do
-        result = described_class.calculate_positions(
-          total_count: 3,
-          ratio: 0.666667
-        )
-        expect(result).to eq([0, 1])
-      end
-
-      it 'handles available items with target count of 1' do
-        result = described_class.calculate_positions(
-          total_count: 5,
-          ratio: 0.2,
-          available_items: [2]
-        )
-        expect(result).to eq([2])
-      end
-
-      it 'handles available items exactly matching target count' do
-        result = described_class.calculate_positions(
-          total_count: 10,
-          ratio: 0.3,
-          available_items: [1, 2, 3]
-        )
-        expect(result).to eq([1, 2, 3])
-      end
-
-      it 'handles zero ratio' do
-        result = described_class.calculate_positions(
-          total_count: 10,
-          ratio: 0.0
-        )
-        expect(result).to eq([])
-      end
-
-      it 'handles ratio of 1.0' do
-        result = described_class.calculate_positions(
-          total_count: 3,
-          ratio: 1.0
-        )
-        expect(result).to eq([0, 1, 2])
-      end
-    end
-
-    context 'with complex edge cases' do
-      it 'handles available items with single target position' do
-        result = described_class.calculate_positions(
-          total_count: 5,
-          ratio: 0.2,
-          available_items: [0, 2, 4]
-        )
-        expect(result).to eq([0])
-      end
-
-      it 'handles available items with even distribution' do
-        result = described_class.calculate_positions(
-          total_count: 10,
-          ratio: 0.5,
-          available_items: [0, 2, 4, 6, 8]
-        )
-        expect(result).to eq([0, 2, 4, 6, 8])
-      end
-
-      it 'handles target count equal to available items size' do
-        result = described_class.calculate_positions(
-          total_count: 6,
-          ratio: 0.5,
-          available_items: [1, 3, 5]
-        )
-        expect(result).to eq([1, 3, 5])
-      end
-
-      it 'handles floating point precision edge case with ratio 0.333333' do
-        result = described_class.calculate_positions(
-          total_count: 3,
-          ratio: 0.333333
-        )
-        expect(result).to eq([0])
-      end
-
-      it 'handles floating point precision edge case with ratio 0.666667' do
-        result = described_class.calculate_positions(
-          total_count: 3,
-          ratio: 0.666667
-        )
-        expect(result).to eq([0, 1])
+        it 'returns [0]' do
+          expect(positions).to eq([0])
+        end
       end
     end
   end

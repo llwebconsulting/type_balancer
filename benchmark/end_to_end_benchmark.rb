@@ -39,7 +39,7 @@ def run_benchmark
     collection = generate_test_data(test_case[:size])
 
     # Single warmup run to ensure everything is loaded
-    TypeBalancer.balance(collection, types: types)
+    TypeBalancer.balance(collection, type_field: :type)
 
     # Run benchmark
     Benchmark.ips do |bm|
@@ -49,12 +49,12 @@ def run_benchmark
 
       bm.config(time: bench_time, warmup: warmup_time)
       bm.report("Ruby Implementation") do
-        TypeBalancer.balance(collection, types: types)
+        TypeBalancer.balance(collection, type_field: :type)
       end
     end
 
     # Print distribution stats for verification
-    result = TypeBalancer.balance(collection, types: types)
+    result = TypeBalancer.balance(collection, type_field: :type)
     # Flatten batches into a single array
     flattened_result = result.flatten
     puts "\nDistribution Stats:"

@@ -9,9 +9,9 @@ Running benchmarks...
 Benchmarking Tiny Dataset (10 items)
 ruby 3.3.7 (2025-01-15 revision be31f993d7) +YJIT [aarch64-linux]
 Warming up --------------------------------------
- Ruby Implementation    12.478k i/100ms
+ Ruby Implementation    15.811k i/100ms
 Calculating -------------------------------------
- Ruby Implementation    131.124k (±17.0%) i/s    (7.63 μs/i) -    262.038k in   2.084375s
+ Ruby Implementation    176.585k (±10.2%) i/s    (5.66 μs/i) -    363.653k in   2.084636s
 
 Distribution Stats:
 Video: 4 (40.0%)
@@ -21,9 +21,9 @@ Article: 3 (30.0%)
 Benchmarking Small Dataset (100 items)
 ruby 3.3.7 (2025-01-15 revision be31f993d7) +YJIT [aarch64-linux]
 Warming up --------------------------------------
- Ruby Implementation     1.886k i/100ms
+ Ruby Implementation     2.755k i/100ms
 Calculating -------------------------------------
- Ruby Implementation     20.898k (±12.4%) i/s   (47.85 μs/i) -     41.492k in   2.023352s
+ Ruby Implementation     29.060k (± 8.7%) i/s   (34.41 μs/i) -     57.855k in   2.007501s
 
 Distribution Stats:
 Video: 34 (34.0%)
@@ -33,9 +33,9 @@ Article: 33 (33.0%)
 Benchmarking Medium Dataset (1000 items)
 ruby 3.3.7 (2025-01-15 revision be31f993d7) +YJIT [aarch64-linux]
 Warming up --------------------------------------
- Ruby Implementation   224.000 i/100ms
+ Ruby Implementation   328.000 i/100ms
 Calculating -------------------------------------
- Ruby Implementation      2.211k (±15.4%) i/s  (452.38 μs/i) -      6.496k in   3.033483s
+ Ruby Implementation      3.619k (±10.0%) i/s  (276.35 μs/i) -     10.824k in   3.027879s
 
 Distribution Stats:
 Video: 334 (33.4%)
@@ -45,9 +45,9 @@ Article: 333 (33.3%)
 Benchmarking Large Dataset (10000 items)
 ruby 3.3.7 (2025-01-15 revision be31f993d7) +YJIT [aarch64-linux]
 Warming up --------------------------------------
- Ruby Implementation    25.000 i/100ms
+ Ruby Implementation    40.000 i/100ms
 Calculating -------------------------------------
- Ruby Implementation    229.406 (±10.5%) i/s    (4.36 ms/i) -    700.000 in   3.093994s
+ Ruby Implementation    394.097 (± 4.8%) i/s    (2.54 ms/i) -      1.200k in   3.053424s
 
 Distribution Stats:
 Video: 3334 (33.34%)

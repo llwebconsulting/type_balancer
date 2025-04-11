@@ -5,6 +5,7 @@ require 'type_balancer/calculator'
 require_relative 'type_balancer/balancer'
 require_relative 'type_balancer/ratio_calculator'
 require_relative 'type_balancer/batch_processing'
+require 'type_balancer/position_calculator'
 
 module TypeBalancer
   class Error < StandardError; end
@@ -21,43 +22,42 @@ module TypeBalancer
   require_relative 'type_balancer/distributor'
 
   def self.calculate_positions(total_count:, ratio:, available_items: nil)
-    PositionCalculator.calculate_positions(
+    Distributor.calculate_target_positions(
       total_count: total_count,
       ratio: ratio,
-      available_items: available_items
+      available_positions: available_items
     )
   end
 
-  def self.balance(collection, types:, batch_size: 10, type_order: nil, type_field: :type)
-    raise EmptyCollectionError, 'Collection cannot be empty' if collection.empty?
-    raise ArgumentError, 'Types cannot be empty' if types.empty?
-    raise ArgumentError, 'Batch size must be positive' unless batch_size.positive?
+  def self.balance(items, type_field: :type, type_order: nil)
+    # Input validation
+    raise EmptyCollectionError, 'Collection cannot be empty' if items.empty?
 
-    # Group items by type using the specified type_field
-    items_by_type = collection.group_by do |item|
-      if item.respond_to?(type_field)
-        item.send(type_field)
-      elsif item.respond_to?(:[])
-        item[type_field] || item[type_field.to_s]
-      else
-        raise Error, "Cannot access type field '#{type_field}' on item #{item}"
-      end
-    end
+    # Extract and validate types
+    types = extract_types(items, type_field)
+    raise Error, "Invalid type field: #{type_field}" if types.empty?
 
-    # Create balancer and balance items
-    balancer = Balancer.new(types, batch_size, type_order: type_order)
-    balancer.call(items_by_type)
+    # Group items by type
+    items.group_by { |item| extract_type(item, type_field) }
+
+    # Initialize balancer with type order if provided
+    balancer = Balancer.new(types, type_order: type_order)
+
+    # Balance items
+    balancer.call(items)
   end
 
-  def self.extract_types(collection, type_field)
-    collection.map do |item|
-      if item.respond_to?(type_field)
-        item.send(type_field)
-      elsif item.respond_to?(:[])
-        item[type_field] || item[type_field.to_s]
-      else
-        raise Error, "Cannot access type field '#{type_field}' on item #{item}"
-      end
-    end.uniq
+  def self.extract_types(items, type_field)
+    items.map { |item| extract_type(item, type_field) }.uniq
+  end
+
+  def self.extract_type(item, type_field)
+    if item.is_a?(Hash)
+      item[type_field] || item[type_field.to_s]
+    else
+      item.public_send(type_field)
+    end
+  rescue NoMethodError
+    nil
   end
 end

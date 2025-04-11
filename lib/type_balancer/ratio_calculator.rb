@@ -57,21 +57,29 @@ module TypeBalancer
       def calculate_ratios(types, items_by_type)
         return { types.first => 1.0 } if types.size == 1
 
-        # Create a hash of type counts
-        type_counts = types.to_h { |type| [type, items_by_type.fetch(type, []).size] }
-        total_count = type_counts.values.sum.to_f
-
-        # Calculate initial ratios
-        ratios = calculate_initial_ratios(type_counts, total_count)
-
-        # Normalize ratios
-        normalize_ratios(ratios)
+        type_counts = calculate_type_counts(types, items_by_type)
+        initial_ratios = calculate_initial_ratios(types, type_counts)
+        normalize_ratios(initial_ratios)
       end
 
       private
 
-      def calculate_initial_ratios(type_counts, total_count)
-        type_counts.transform_values { |count| count / total_count }
+      def calculate_type_counts(types, items_by_type)
+        types.to_h { |type| [type, items_by_type.fetch(type, []).size] }
+      end
+
+      def calculate_initial_ratios(types, type_counts)
+        total_count = type_counts.values.sum.to_f
+        min_ratio = 0.1
+        remaining_ratio = 1.0 - (min_ratio * types.size)
+
+        type_counts.transform_values do |count|
+          if count.zero?
+            min_ratio
+          else
+            min_ratio + ((count / total_count) * remaining_ratio)
+          end
+        end
       end
 
       def normalize_ratios(ratios)

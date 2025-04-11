@@ -7,6 +7,10 @@
 [![Ruby Coverage](https://img.shields.io/badge/ruby--coverage-78.57%25-yellow.svg)](https://github.com/llwebconsulting/type_balancer/blob/main/coverage/index.html)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
 
+Imagine you have a collection of items—like blog posts—that each belong to a specific type: Articles, Images, and Videos. Typically, articles heavily outnumber the other types, which means users often have to scroll past dozens of articles before encountering a video or image. Not an ideal experience.
+
+TypeBalancer solves this by intelligently mixing your collection based on type. You simply pass it your collection and the name of the type field, and it ensures that Images and Videos are evenly distributed alongside Articles right at the top of your feed. This way, your users get a more varied and engaging experience from the moment they start scrolling.
+
 TypeBalancer is a sophisticated Ruby gem designed to solve the challenge of distributing different types of content across a sequence while maintaining optimal spacing and ratios. It's particularly useful for:
 
 - **Content Management Systems**: Ensure a balanced mix of content types (videos, articles, images) in feeds
