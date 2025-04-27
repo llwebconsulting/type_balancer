@@ -56,6 +56,28 @@ items = [
 balanced_items = TypeBalancer.balance(items, type_field: :type)
 ```
 
+## Calculating Positions Directly
+
+In addition to balancing collections, you can use `TypeBalancer.calculate_positions` to determine optimal positions for a given type or subset of items within a sequence. This is useful for advanced scenarios where you need fine-grained control over item placement.
+
+**Basic Example:**
+
+```ruby
+# Calculate positions for 3 items in a sequence of 10 slots
+positions = TypeBalancer.calculate_positions(total_count: 10, ratio: 0.3)
+# => [0, 5, 9]
+```
+
+**With Available Items:**
+
+```ruby
+# Restrict placement to specific slots
+positions = TypeBalancer.calculate_positions(total_count: 10, ratio: 0.5, available_items: [0, 1, 2])
+# => [0, 1, 2]
+```
+
+For more advanced usage and options, see [Detailed Position Calculation Documentation](docs/calculate_positions.md).
+
 ## Performance Characteristics
 
 TypeBalancer is designed to handle collections of varying sizes efficiently. Here are the current performance metrics:
