@@ -8,11 +8,25 @@ The TypeBalancer gem includes a comprehensive quality check script located at `/
 
 ## Running the Script
 
-To run the quality script:
+To run the quality script from the gem repository:
 
 ```bash
 bundle exec ruby examples/quality.rb
 ```
+
+### Running from Other Projects
+
+You can run the quality script from any project that includes the TypeBalancer gem. This is useful for verifying the gem's behavior in your app or as part of CI for downstream projects.
+
+**Example:**
+
+```bash
+bundle exec ruby path/to/gems/type_balancer/examples/quality.rb
+```
+
+- Ensure the gem is installed and available in your bundle.
+- The script expects the test data file at `examples/balance_test_data.yml` (relative to the gem root).
+- Output will be color-coded if your terminal supports ANSI colors.
 
 ## What it Tests
 
@@ -23,32 +37,23 @@ The script tests several key aspects of the TypeBalancer gem:
 - Shows spacing calculations between positions
 - Verifies edge cases (single item, no items, all items)
 
-### 2. Content Feed Example
+### 2. Robust Balance Method Tests
+- Loads scenarios from a YAML file (`examples/balance_test_data.yml`)
+- Tests `TypeBalancer.balance` with and without the `type_order` argument
+- Checks type counts, custom order, and exception handling for empty input
+- Prints a color-coded summary table for pass/fail counts
+
+### 3. Content Feed Example
 - Shows a real-world example of content type distribution
 - Verifies position allocation for different content types (video, image, article)
 - Checks distribution statistics and ratios
 
-### 3. Balancer API
-- Tests the main TypeBalancer.balance method
-- Verifies batch creation and size limits
-- Demonstrates custom type ordering
-
-### 4. Type Extraction
-- Tests type extraction from both hash and object items
-- Verifies support for different type field access methods
-
-### 5. Error Handling
-- Validates handling of empty collections
-- Tests response to invalid type fields
-- Verifies batch size validation
-
 ## Output Format
 
-The script provides detailed output showing:
-- Results of each test case
-- Distribution statistics
-- Any issues found during testing
-- A summary of all examples run and passed
+- Each section prints a color-coded summary table of passing and failing tests
+- Failures and exceptions are highlighted in red; passes in green
+- The final summary shows the total number of examples run and passed
+- The script exits with status 0 if all tests pass, or 1 if any fail (CI-friendly)
 
 ## Using as a Development Tool
 
@@ -57,6 +62,19 @@ The quality script is particularly useful when:
 2. Refactoring existing code
 3. Verifying changes haven't broken core functionality
 4. Understanding how different features work together
+
+## Customizing/Extending the Script
+
+- You can add new scenarios to `examples/balance_test_data.yml` to test additional cases or edge conditions.
+- You may copy or extend the script for your own integration tests.
+- The script can be adapted to accept a custom YAML path if needed (see comments in the script).
+
+## Troubleshooting
+
+- **Color output not working:** Ensure your terminal supports ANSI colors.
+- **File not found:** Make sure `examples/balance_test_data.yml` exists and is accessible from the script's location.
+- **Gem not found:** Ensure the TypeBalancer gem is installed and available in your bundle.
+- **Path issues:** Use an absolute or correct relative path to the script when running from another project.
 
 ## Extending the Script
 

@@ -56,6 +56,38 @@ items = [
 balanced_items = TypeBalancer.balance(items, type_field: :type)
 ```
 
+## Balancing Collections with `TypeBalancer.balance`
+
+The primary method for balancing collections is `TypeBalancer.balance`. This method takes an array of items and distributes them by type, ensuring optimal spacing and respecting type ratios.
+
+**Basic Example:**
+
+```ruby
+items = [
+  { type: 'video', title: 'Video 1' },
+  { type: 'image', title: 'Image 1' },
+  { type: 'article', title: 'Article 1' },
+  # ...
+]
+balanced = TypeBalancer.balance(items, type_field: :type)
+# => [ { type: 'article', ... }, { type: 'image', ... }, { type: 'video', ... }, ... ]
+```
+
+**Custom Type Order:**
+
+You can specify a custom order for types using the `type_order` argument. This controls the priority of types in the balanced output.
+
+```ruby
+# Prioritize images, then videos, then articles
+balanced = TypeBalancer.balance(items, type_field: :type, type_order: %w[image video article])
+# => [ { type: 'image', ... }, { type: 'video', ... }, { type: 'article', ... }, ... ]
+```
+
+- `type_field`: The key to use for type extraction (default: `:type`).
+- `type_order`: An array of type names (as strings) specifying the desired order.
+
+For more advanced usage and options, see [Detailed Balance Method Documentation](docs/balance.md).
+
 ## Calculating Positions Directly
 
 In addition to balancing collections, you can use `TypeBalancer.calculate_positions` to determine optimal positions for a given type or subset of items within a sequence. This is useful for advanced scenarios where you need fine-grained control over item placement.
