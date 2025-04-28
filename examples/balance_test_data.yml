@@ -1,0 +1,66 @@
+# Test data for TypeBalancer.balance integration tests
+
+- name: Even distribution
+  items:
+    - { type: video, id: 1 }
+    - { type: video, id: 2 }
+    - { type: image, id: 3 }
+    - { type: image, id: 4 }
+    - { type: article, id: 5 }
+    - { type: article, id: 6 }
+    - { type: article, id: 7 }
+    - { type: article, id: 8 }
+  expected_type_counts:
+    video: 2
+    image: 2
+    article: 4
+
+- name: Uneven distribution
+  items:
+    - { type: video, id: 1 }
+    - { type: image, id: 2 }
+    - { type: article, id: 3 }
+    - { type: article, id: 4 }
+    - { type: article, id: 5 }
+    - { type: article, id: 6 }
+    - { type: article, id: 7 }
+    - { type: article, id: 8 }
+  expected_type_counts:
+    video: 1
+    image: 1
+    article: 6
+
+- name: Missing type (no images)
+  items:
+    - { type: video, id: 1 }
+    - { type: video, id: 2 }
+    - { type: article, id: 3 }
+    - { type: article, id: 4 }
+    - { type: article, id: 5 }
+  expected_type_counts:
+    video: 2
+    article: 3
+
+- name: Custom type order
+  items:
+    - { type: video, id: 1 }
+    - { type: image, id: 2 }
+    - { type: article, id: 3 }
+    - { type: article, id: 4 }
+    - { type: image, id: 5 }
+    - { type: video, id: 6 }
+    - { type: article, id: 7 }
+  type_order: [image, video, article]
+  expected_first_type: image
+
+- name: Edge case - empty
+  items: []
+  expected_type_counts: {}
+
+- name: Edge case - single type
+  items:
+    - { type: article, id: 1 }
+    - { type: article, id: 2 }
+    - { type: article, id: 3 }
+  expected_type_counts:
+    article: 3 
