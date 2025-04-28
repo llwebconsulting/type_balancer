@@ -21,7 +21,23 @@ You can run the quality script from any project that includes the TypeBalancer g
 **Example:**
 
 ```bash
-bundle exec ruby path/to/gems/type_balancer/examples/quality.rb
+bundle exec ruby /path/to/gems/type_balancer/examples/quality.rb
+```
+
+**How do I find the path to the gem?**
+
+If you are not sure where the gem is installed, you can use Bundler to locate it:
+
+```bash
+bundle show type_balancer
+```
+
+This will print the path to the gem directory. The quality script is located in the `examples` subdirectory of that path. For example:
+
+```bash
+$ bundle show type_balancer
+/Users/yourname/.rbenv/versions/3.2.2/lib/ruby/gems/3.2.0/gems/type_balancer-0.1.3
+$ bundle exec ruby /Users/yourname/.rbenv/versions/3.2.2/lib/ruby/gems/3.2.0/gems/type_balancer-0.1.3/examples/quality.rb
 ```
 
 - Ensure the gem is installed and available in your bundle.

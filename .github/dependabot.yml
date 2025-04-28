@@ -14,18 +14,7 @@ updates:
       - "automated"
     # Allow up to 10 open pull requests for dependencies
     open-pull-requests-limit: 10
-    # Group all minor and patch updates together
-    groups:
-      development-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
-      production-dependencies:
-        dependency-type: "production"
-        update-types:
-          - "minor"
-          - "patch"
+    # Removed groups to allow separate PRs for each dependency
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"

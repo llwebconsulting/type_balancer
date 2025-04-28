@@ -20,7 +20,7 @@ TypeBalancer is a sophisticated Ruby gem designed to solve the challenge of dist
 
 The gem uses advanced distribution algorithms to ensure that items are not only balanced by type but also maintain optimal spacing, preventing clusters of similar content while respecting specified ratios.
 
-[View Examples & Quality Tests](docs/quality.md) | [View Benchmark Results](docs/benchmarks/README.md)
+[View Documentation](docs/README.md) | [View Benchmark Results](docs/benchmarks/README.md)
 
 ## Installation
 
@@ -145,7 +145,7 @@ After checking out the repo, run `bin/setup` to install dependencies. Then:
 3. Run `rake rubocop` to check code style
 4. Run `bin/console` for an interactive prompt
 
-For more information about the quality script and its uses, see our [quality script documentation](docs/quality.md).
+For more information about the gem, its features, and quality checks, see our [documentation](docs/README.md).
 
 ## Contributing
 
@@ -194,7 +194,7 @@ We welcome contributions to TypeBalancer! Here's how you can help:
 - Quality script should pass without new issues
 
 For more detailed information about our development process and tools:
-- [Quality Script Documentation](docs/quality.md)
+- [Documentation](docs/README.md)
 - [Benchmark Documentation](docs/benchmarks/README.md)
 
 ## License
