@@ -18,6 +18,10 @@ RSpec.describe TypeBalancer::Balancer do
     it 'raises error for empty types' do
       expect { described_class.new([]) }.to raise_error(ArgumentError, 'Types cannot be empty')
     end
+
+    it 'accepts a custom type_field' do
+      expect { described_class.new(types, type_field: :category) }.not_to raise_error
+    end
   end
 
   describe '#call' do
@@ -38,6 +42,55 @@ RSpec.describe TypeBalancer::Balancer do
 
       it 'maintains data integrity' do
         expect(result.map { |item| item[:id] }).to contain_exactly(1, 2, 3)
+      end
+    end
+
+    context 'with custom type field' do
+      let(:types) { %w[A B C] }
+      let(:balancer) { described_class.new(types, type_field: :category) }
+      let(:collection) do
+        [
+          { category: 'A', id: 1 },
+          { category: 'B', id: 2 },
+          { category: 'C', id: 3 }
+        ]
+      end
+
+      it 'uses the custom type field' do
+        expect(result).to match_array(collection)
+      end
+
+      it 'maintains data integrity with custom field' do
+        expect(result.map { |item| item[:id] }).to contain_exactly(1, 2, 3)
+      end
+
+      context 'with string keys' do
+        let(:collection) do
+          [
+            { 'category' => 'A', 'id' => 1 },
+            { 'category' => 'B', 'id' => 2 },
+            { 'category' => 'C', 'id' => 3 }
+          ]
+        end
+
+        it 'handles string keys correctly' do
+          expect(result).to match_array(collection)
+        end
+      end
+
+      context 'with object properties' do
+        let(:item_class) { Struct.new(:category, :id) }
+        let(:collection) do
+          [
+            item_class.new('A', 1),
+            item_class.new('B', 2),
+            item_class.new('C', 3)
+          ]
+        end
+
+        it 'handles object properties correctly' do
+          expect(result).to match_array(collection)
+        end
       end
     end
 

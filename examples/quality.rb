@@ -23,6 +23,7 @@ class QualityChecker
     check_available_positions_edge_cases
     check_balance_method_robust
     check_real_world_feed
+    check_custom_type_field
 
     print_summary
     exit(@issues.empty? ? 0 : 1)
@@ -326,6 +327,28 @@ class QualityChecker
       print_section_table('real_world_feed', 1, 0)
     end
     puts "  Balanced items with custom order: #{ordered_result.map { |i| i[:type] }.inspect}"
+  end
+
+  def check_custom_type_field
+    @examples_run += 1
+    puts "\nCustom Type Field Example:"
+    data = [
+      { category: 'A', payload: 1 },
+      { category: 'B', payload: 2 },
+      { category: 'C', payload: 3 },
+      { category: 'A', payload: 4 }
+    ]
+    balanced = TypeBalancer.balance(data, type_field: :category)
+    found = balanced.map { |i| i[:category] }.uniq.sort
+    expected = %w[A B C]
+    if found == expected
+      @examples_passed += 1
+      puts "#{GREEN}Custom field respected: #{found.inspect}#{RESET}"
+    else
+      record_issue("Expected #{expected.inspect}, got #{found.inspect}")
+      puts "#{RED}Custom field test failed: #{found.inspect}#{RESET}"
+    end
+    print_section_table('custom_type_field', 1, found == expected ? 1 : 0)
   end
 
   def print_summary

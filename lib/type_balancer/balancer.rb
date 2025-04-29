@@ -3,6 +3,7 @@
 require_relative 'ratio_calculator'
 require_relative 'batch_processing'
 require_relative 'position_calculator'
+require_relative 'type_extractor_registry'
 
 module TypeBalancer
   # Handles balancing of items across batches based on type ratios
@@ -10,9 +11,11 @@ module TypeBalancer
     # Initialize a new Balancer instance
     #
     # @param types [Array<String>, nil] Optional types
+    # @param type_field [Symbol] Field to use for type extraction (default: :type)
     # @param type_order [Array<String>, nil] Optional order of types
-    def initialize(types = nil, type_order: nil)
+    def initialize(types = nil, type_field: :type, type_order: nil)
       @types = Array(types) if types
+      @type_field = type_field
       @type_order = type_order
       validate_types! if @types
     end
@@ -23,7 +26,18 @@ module TypeBalancer
     # @return [Array] Balanced items
     def call(collection)
       validate_collection!(collection)
-      items_by_type = group_items_by_type(collection)
+      extractor = TypeExtractorRegistry.get(@type_field)
+
+      begin
+        items_by_type = extractor.group_by_type(collection)
+      rescue TypeBalancer::Error => e
+        raise TypeBalancer::Error, "Cannot access type field '#{@type_field}': #{e.message}"
+      end
+
+      # Remove nil types and validate
+      items_by_type.delete(nil)
+      raise TypeBalancer::Error, "Cannot access type field '#{@type_field}'" if items_by_type.empty?
+
       validate_types_in_collection!(items_by_type)
 
       target_counts = calculate_target_counts(items_by_type)
@@ -70,24 +84,7 @@ module TypeBalancer
       raise TypeBalancer::Error, "Invalid type(s): #{invalid_types.join(', ')}" if invalid_types.any?
     end
 
-    def group_items_by_type(collection)
-      collection.group_by do |item|
-        extract_type(item)
-      end
-    end
-
-    def extract_type(item)
-      return item[:type] || item['type'] || raise(TypeBalancer::Error, 'Cannot access type field') if item.is_a?(Hash)
-
-      begin
-        item.type
-      rescue NoMethodError
-        raise TypeBalancer::Error, 'Cannot access type field'
-      end
-    end
-
     def calculate_target_counts(items_by_type)
-      items_by_type.values.sum(&:size)
       items_by_type.transform_values(&:size)
     end
 

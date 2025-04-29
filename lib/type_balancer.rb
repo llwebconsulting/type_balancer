@@ -6,6 +6,8 @@ require_relative 'type_balancer/balancer'
 require_relative 'type_balancer/ratio_calculator'
 require_relative 'type_balancer/batch_processing'
 require 'type_balancer/position_calculator'
+require_relative 'type_balancer/type_extractor'
+require_relative 'type_balancer/type_extractor_registry'
 
 module TypeBalancer
   class Error < StandardError; end
@@ -33,31 +35,27 @@ module TypeBalancer
     # Input validation
     raise EmptyCollectionError, 'Collection cannot be empty' if items.empty?
 
-    # Extract and validate types
-    types = extract_types(items, type_field)
-    raise Error, "Invalid type field: #{type_field}" if types.empty?
+    # Use centralized extractor
+    extractor = TypeExtractorRegistry.get(type_field)
+    begin
+      types = extractor.extract_types(items)
+      raise Error, "Invalid type field: #{type_field}" if types.empty?
+    rescue Error => e
+      raise Error, "Cannot access type field '#{type_field}': #{e.message}"
+    end
 
-    # Group items by type
-    items.group_by { |item| extract_type(item, type_field) }
-
-    # Initialize balancer with type order if provided
-    balancer = Balancer.new(types, type_order: type_order)
+    # Initialize balancer with type order and type field
+    balancer = Balancer.new(types, type_field: type_field, type_order: type_order)
 
     # Balance items
     balancer.call(items)
   end
 
+  # Backward compatibility methods
   def self.extract_types(items, type_field)
-    items.map { |item| extract_type(item, type_field) }.uniq
-  end
-
-  def self.extract_type(item, type_field)
-    if item.is_a?(Hash)
-      item[type_field] || item[type_field.to_s]
-    else
-      item.public_send(type_field)
-    end
-  rescue NoMethodError
-    nil
+    TypeExtractorRegistry.get(type_field).extract_types(items)
+  rescue Error => e
+    # For backward compatibility, return array with nil for inaccessible type fields
+    [nil]
   end
 end
