@@ -20,10 +20,15 @@ module TypeBalancer
       if item.respond_to?(@type_field)
         item.send(@type_field)
       elsif item.respond_to?(:[])
-        item[@type_field] || item[@type_field.to_s]
+        value = item[@type_field] || item[@type_field.to_s]
+        raise TypeBalancer::Error, "Cannot access type field '#{@type_field}' on item #{item.inspect}" if value.nil?
+
+        value
       else
-        raise Error, "Cannot access type field '#{@type_field}' on item #{item}"
+        raise TypeBalancer::Error, "Cannot access type field '#{@type_field}' on item #{item.inspect}"
       end
+    rescue NoMethodError, TypeError
+      raise TypeBalancer::Error, "Cannot access type field '#{@type_field}' on item #{item.inspect}"
     end
   end
 end

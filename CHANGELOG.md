@@ -1,11 +1,23 @@
 # Changelog
 
-## [0.1.2] - 2024-04-11
+## [0.1.4] - 2025-04-29
+
+### Fixed
+- Fixed issue with providing a custom type field
+
+## [0.1.3] - 2025-04-27
+
+### Fixed
+- Fixed type balancing behavior to properly handle edge cases where type ratios need to be maintained while respecting original collection order
+- Enhanced position calculation to ensure consistent type distribution across the balanced collection
+- Improved test coverage to verify correct type ratio preservation
+
+## [0.1.2] - 2025-04-11
 
 - Re-release of 0.1.1 due to RubyGems.org publishing issue
 - No functional changes from 0.1.1
 
-## [0.1.1] - 2024-03-XX
+## [0.1.1] - 2025-04-10
 
 ### Refactoring
 - Major refactoring of core components to follow SOLID principles:
