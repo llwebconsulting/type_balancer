@@ -54,7 +54,7 @@ module TypeBalancer
   # Backward compatibility methods
   def self.extract_types(items, type_field)
     TypeExtractorRegistry.get(type_field).extract_types(items)
-  rescue Error => e
+  rescue Error
     # For backward compatibility, return array with nil for inaccessible type fields
     [nil]
   end
