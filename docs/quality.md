@@ -53,15 +53,23 @@ The script tests several key aspects of the TypeBalancer gem:
 - Shows spacing calculations between positions
 - Verifies edge cases (single item, no items, all items)
 
-### 2. Robust Balance Method Tests
+### 2. Strategy System
+- Tests the default sliding window strategy
+- Verifies behavior with different window sizes
+- Checks strategy options and customization
+- Ensures backward compatibility with existing code
+
+### 3. Robust Balance Method Tests
 - Loads scenarios from a YAML file (`examples/balance_test_data.yml`)
 - Tests `TypeBalancer.balance` with and without the `type_order` argument
+- Tests different strategy configurations
 - Checks type counts, custom order, and exception handling for empty input
 - Prints a color-coded summary table for pass/fail counts
 
-### 3. Content Feed Example
+### 4. Content Feed Example
 - Shows a real-world example of content type distribution
 - Verifies position allocation for different content types (video, image, article)
+- Tests strategy behavior with real-world data
 - Checks distribution statistics and ratios
 
 ## Output Format

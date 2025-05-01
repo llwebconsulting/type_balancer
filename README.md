@@ -52,15 +52,69 @@ items = [
   # ... more items
 ]
 
-# Balance items by type
+# Balance items by type (uses default sliding window strategy)
 balanced_items = TypeBalancer.balance(items, type_field: :type)
+
+# Use sliding window strategy with custom window size
+balanced_items = TypeBalancer.balance(items, 
+  type_field: :type,
+  strategy: :sliding_window,
+  window_size: 25
+)
 ```
 
 ## Balancing Collections with `TypeBalancer.balance`
 
 The primary method for balancing collections is `TypeBalancer.balance`. This method takes an array of items and distributes them by type, ensuring optimal spacing and respecting type ratios.
 
-**Basic Example:**
+### Available Strategies
+
+TypeBalancer uses a strategy pattern to provide different balancing algorithms. Currently, the gem implements a sophisticated sliding window strategy as its default approach:
+
+#### Sliding Window Strategy (Default)
+The sliding window strategy balances items by examining a fixed-size window of items at a time (default size: 10). Within each window, it maintains the overall ratio of types while ensuring each type gets fair representation. This creates both local and global balance in your content distribution.
+
+**When to Use Sliding Window Strategy:**
+- Content feeds where users might stop scrolling at any point
+- When you want to ensure diversity in any segment of your list
+- When you need to maintain both local and global balance
+- When you want to prevent long runs of the same type while still allowing some natural clustering
+
+**Window Size Selection Guide:**
+- Small windows (5-10): Strict local balance, ideal for shorter lists or when immediate diversity is critical
+- Medium windows (15-25): Balance between local and global distribution
+- Large windows (30+): More gradual transitions, better for preserving some natural clustering
+
+```ruby
+# Basic usage with default window size (10)
+balanced = TypeBalancer.balance(items, type_field: :type)
+
+# Custom window size for stricter local balance
+balanced = TypeBalancer.balance(items, 
+  type_field: :type,
+  strategy: :sliding_window,
+  window_size: 5
+)
+
+# Larger window for more gradual transitions
+balanced = TypeBalancer.balance(items,
+  type_field: :type,
+  strategy: :sliding_window,
+  window_size: 25
+)
+
+# With custom type ordering
+balanced = TypeBalancer.balance(items,
+  type_field: :type,
+  strategy: :sliding_window,
+  window_size: 15,
+  type_order: %w[image video article]
+)
+```
+
+The strategy system is designed to be extensible, allowing for future implementations of different balancing algorithms as needed.
+
+### Basic Example
 
 ```ruby
 items = [
@@ -73,18 +127,25 @@ balanced = TypeBalancer.balance(items, type_field: :type)
 # => [ { type: 'article', ... }, { type: 'image', ... }, { type: 'video', ... }, ... ]
 ```
 
-**Custom Type Order:**
+### Custom Type Order
 
 You can specify a custom order for types using the `type_order` argument. This controls the priority of types in the balanced output.
 
 ```ruby
 # Prioritize images, then videos, then articles
-balanced = TypeBalancer.balance(items, type_field: :type, type_order: %w[image video article])
+balanced = TypeBalancer.balance(items,
+  type_field: :type,
+  type_order: %w[image video article],
+  strategy: :sliding_window,
+  window_size: 15
+)
 # => [ { type: 'image', ... }, { type: 'video', ... }, { type: 'article', ... }, ... ]
 ```
 
 - `type_field`: The key to use for type extraction (default: `:type`).
 - `type_order`: An array of type names (as strings) specifying the desired order.
+- `strategy`: The balancing strategy to use (default: `:sliding_window`).
+- `window_size`: Size of the sliding window for the sliding window strategy (default: 10).
 
 For more advanced usage and options, see [Detailed Balance Method Documentation](docs/balance.md).
 
