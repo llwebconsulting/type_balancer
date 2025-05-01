@@ -43,8 +43,6 @@ module TypeBalancer
         type_queues
       end
 
-      private
-
       DEFAULT_TYPE_ORDER = %w[video image strip article].freeze
     end
   end
