@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.2.0] - 2025-04-30
+
+### Added
+- Introduced strategy pattern for flexible balancing algorithms
+- Added sliding window strategy as the default balancing algorithm
+  - Configurable window size (default: 10)
+  - Maintains both local and global type ratios
+  - Adaptive behavior for remaining items
+- Added comprehensive strategy documentation in README and balance.md
+- Added large scale balance test suite for thorough strategy validation
+
+### Enhanced
+- Improved quality testing infrastructure
+  - Added quality:all rake task that runs both quality.rb and large_scale_balance_test.rb
+  - Enhanced CI workflow to run all quality checks
+  - Added strategy-specific test cases
+- Updated documentation with detailed strategy explanations and use cases
+- Added extensive test coverage for strategy system
+
+### Fixed
+- Improved handling of type distribution in edge cases
+- Better handling of remaining items when types are depleted
+- Enhanced transition handling between windows
+
 ## [0.1.4] - 2025-04-29
 
 ### Fixed
