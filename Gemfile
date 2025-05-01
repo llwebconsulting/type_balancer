@@ -10,7 +10,7 @@ group :development do
   gem 'benchmark-ips', '~> 2.12'
   gem 'ffi'
   gem 'rake', '~> 13.0'
-  gem 'rake-compiler', '~> 1.2'
+  gem 'rake-compiler', '~> 1.3'
   gem 'rspec', '~> 3.0'
   gem 'rubocop', '~> 1.21'
   gem 'rubocop-rake', '~> 0.6.0'
