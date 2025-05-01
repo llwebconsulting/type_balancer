@@ -16,7 +16,7 @@ module TypeBalancer
         return [] if @items.empty?
 
         validate_items!
-        return @items.dup if single_type?
+        return @items.dup if group_items_by_type.size == 1
 
         type_queues   = group_items_by_type
         type_ratios   = calculate_type_ratios(type_queues)
@@ -25,10 +25,6 @@ module TypeBalancer
       end
 
       private
-
-      def single_type?
-        group_items_by_type.size == 1
-      end
 
       def calculate_type_ratios(type_queues)
         total_items = @items.size.to_f
@@ -59,8 +55,7 @@ module TypeBalancer
       end
 
       def next_window_size(result)
-        remaining = @items.size - result.size
-        [[@window_size, remaining].min, 1].max
+        (@items.size - result.size).clamp(1, @window_size)
       end
 
       def append_remaining(result, used_items)
