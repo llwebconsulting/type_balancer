@@ -17,7 +17,7 @@ RSpec.describe TypeBalancer do
       ]
     end
 
-    let(:balancer_instance) { instance_double(TypeBalancer::Balancer) }
+    let(:calculator_instance) { instance_double(TypeBalancer::Calculator) }
 
     context 'with default settings' do
       subject(:balanced_items) { described_class.balance(items) }
@@ -33,8 +33,8 @@ RSpec.describe TypeBalancer do
           { type: 'strip', name: 'Strip 2' }
         ]
 
-        allow(TypeBalancer::Balancer).to receive(:new).and_return(balancer_instance)
-        allow(balancer_instance).to receive(:call).and_return(expected_result)
+        allow(TypeBalancer::Calculator).to receive(:new).and_return(calculator_instance)
+        allow(calculator_instance).to receive(:call).and_return(expected_result)
       end
 
       it 'preserves all items' do
@@ -78,8 +78,8 @@ RSpec.describe TypeBalancer do
           { type: 'video', name: 'Video 2' }
         ]
 
-        allow(TypeBalancer::Balancer).to receive(:new).and_return(balancer_instance)
-        allow(balancer_instance).to receive(:call).and_return(expected_result)
+        allow(TypeBalancer::Calculator).to receive(:new).and_return(calculator_instance)
+        allow(calculator_instance).to receive(:call).and_return(expected_result)
       end
 
       it 'preserves all items' do
@@ -107,6 +107,11 @@ RSpec.describe TypeBalancer do
           { category: 'image', name: 'Image 1' },
           { category: 'strip', name: 'Strip 1' }
         ]
+      end
+
+      before do
+        allow(TypeBalancer::Calculator).to receive(:new).and_return(calculator_instance)
+        allow(calculator_instance).to receive(:call).and_return(items)
       end
 
       it 'preserves all items' do

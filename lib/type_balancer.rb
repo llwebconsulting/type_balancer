@@ -20,6 +20,7 @@ module TypeBalancer
 
   # Register default strategies
   StrategyFactory.register(:sliding_window, Strategies::SlidingWindowStrategy)
+  StrategyFactory.default_strategy = :sliding_window
 
   # Load Ruby implementations
   require_relative 'type_balancer/distribution_calculator'
@@ -43,7 +44,8 @@ module TypeBalancer
     )
   end
 
-  def self.balance(items, type_field: :type, type_order: nil, strategy: nil, **strategy_options)
+  # rubocop:disable Metrics/ParameterLists
+  def self.balance(items, type_field: :type, type_order: nil, strategy: nil, window_size: nil, **strategy_options)
     # Input validation
     raise EmptyCollectionError, 'Collection cannot be empty' if items.empty?
 
@@ -56,11 +58,15 @@ module TypeBalancer
       raise Error, "Cannot access type field '#{type_field}': #{e.message}"
     end
 
+    # Merge window_size into strategy_options if provided
+    strategy_options = strategy_options.merge(window_size: window_size) if window_size
+
     # Create calculator with strategy options
     calculator = Calculator.new(
       items,
       type_field: type_field,
       types: type_order || types,
+      type_order: type_order,
       strategy: strategy,
       **strategy_options
     )
@@ -68,6 +74,7 @@ module TypeBalancer
     # Balance items
     calculator.call
   end
+  # rubocop:enable Metrics/ParameterLists
 
   # Backward compatibility methods
   def self.extract_types(items, type_field)

@@ -4,135 +4,194 @@ require_relative 'base_strategy'
 
 module TypeBalancer
   module Strategies
-    # Implements a sliding window approach to balance items
+    # Implements an efficient sliding window approach for balancing items
+    # This strategy uses array-based indexing and pre-calculated ratios for optimal performance
     class SlidingWindowStrategy < BaseStrategy
-      def initialize(items:, type_field:, types: nil, window_size: 10)
-        super(items: items, type_field: type_field, types: types)
+      DEFAULT_BATCH_SIZE = 1000
+
+      # rubocop:disable Metrics/ParameterLists
+      def initialize(items:, type_field:, types: nil, type_order: nil, window_size: 10, batch_size: DEFAULT_BATCH_SIZE)
+        super(items: items, type_field: type_field, types: types, type_order: type_order)
         @window_size = window_size
-        @types = types || extract_types
+        @batch_size  = batch_size
+        @types       = types || extract_types
       end
+      # rubocop:enable Metrics/ParameterLists
 
       def balance
         return [] if @items.empty?
 
         validate_items!
-        return @items.dup if group_items_by_type.size == 1
+        return @items.dup if single_type?
 
-        type_queues   = group_items_by_type
-        type_ratios   = calculate_type_ratios(type_queues)
+        @type_queues = build_type_queues
+        @type_ratios = calculate_type_ratios
 
-        process_windows(type_queues, type_ratios)
+        if @items.size > @batch_size
+          process_large_collection
+        else
+          process_single_batch
+        end
       end
 
       private
 
-      def calculate_type_ratios(type_queues)
-        total_items = @items.size.to_f
-        type_queues.transform_values { |list| list.size / total_items }
+      def single_type?
+        @items.map { |item| item[@type_field].to_s }.uniq.one?
       end
 
-      def process_windows(type_queues, type_ratios)
-        result     = []
-        used_items = Set.new
+      def build_type_queues
+        queues = {}
+        ordered_types = @type_order || @types
+        ordered_types.each { |t| queues[t] = [] }
 
-        until result.size == @items.size
-          size   = next_window_size(result)
-          window = balance_window(type_queues, type_ratios, size, used_items)
+        @items.each_with_index do |item, idx|
+          t = item[@type_field].to_s
+          queues[t] << idx if queues.key?(t)
+        end
 
-          if window.empty?
-            append_remaining(result, used_items)
-          else
-            window.each do |item|
-              next if used_items.include?(item)
+        queues
+      end
 
-              result << item
-              used_items.add(item)
-            end
+      def calculate_type_ratios
+        total = @items.size.to_f
+        @type_queues.transform_values { |inds| inds.size / total }
+      end
+
+      def process_large_collection
+        result       = Array.new(@items.size)
+        type_indices = initialize_type_indices
+
+        (0...@items.size).step(@batch_size) do |start_idx|
+          end_idx = [start_idx + @batch_size, @items.size].min
+          process_batch_range(result, type_indices, start_idx, end_idx)
+        end
+
+        result.compact
+      end
+
+      def process_single_batch
+        result = Array.new(@items.size)
+        process_batch_range(result, initialize_type_indices, 0, @items.size)
+        result.compact
+      end
+
+      def initialize_type_indices
+        @type_queues.transform_values { 0 }
+      end
+
+      def process_batch_range(result, type_indices, start_idx, end_idx)
+        window_start = start_idx
+
+        while window_start < end_idx
+          window_size = compute_window_size(window_start, end_idx)
+          positions   = calculate_window_positions(window_size)
+          apply_window_positions(positions, window_start, window_size, result, type_indices)
+          window_start += window_size
+        end
+
+        fill_gaps(result, type_indices, start_idx, end_idx)
+      end
+
+      def compute_window_size(start_pos, end_pos)
+        [[start_pos + @window_size, end_pos].min - start_pos, 1].max
+      end
+
+      def calculate_window_positions(window_size)
+        WindowSlotCalculator.new(@type_ratios, @type_order).calculate(window_size)
+      end
+
+      def apply_window_positions(positions, start_pos, size, result, type_indices)
+        ordered_types = @type_order || @type_queues.keys
+        ordered_types.each do |type|
+          next unless positions[type]
+
+          positions[type].times do
+            break if type_indices[type] >= @type_queues[type].size
+
+            pos = find_next_position(result, start_pos, start_pos + size)
+            break unless pos
+
+            result[pos] = @items[@type_queues[type][type_indices[type]]]
+            type_indices[type] += 1
           end
         end
-
-        result
       end
 
-      def next_window_size(result)
-        (@items.size - result.size).clamp(1, @window_size)
+      def find_next_position(result, start_pos, end_pos)
+        (start_pos...end_pos).find { |i| result[i].nil? }
       end
 
-      def append_remaining(result, used_items)
-        @items.each do |item|
-          next if used_items.include?(item)
+      def fill_gaps(result, type_indices, start_idx, end_idx)
+        ordered_types = @type_order || @type_queues.keys
 
-          result << item
-          used_items.add(item)
+        (start_idx...end_idx).each do |i|
+          next unless result[i].nil?
+
+          ordered_types.each do |type|
+            next unless @type_queues[type] && type_indices[type] < @type_queues[type].size
+
+            result[i] = @items[@type_queues[type][type_indices[type]]]
+            type_indices[type] += 1
+            break
+          end
         end
       end
 
-      def balance_window(type_queues, type_ratios, window_size, used_items)
-        window_items   = []
-        target_counts  = calculate_window_targets(type_ratios, window_size)
-        current_counts = Hash.new(0)
-
-        while window_items.size < window_size
-          type_to_add = find_next_type(type_ratios, current_counts, target_counts, type_queues, used_items)
-          break unless type_to_add
-
-          next_item = type_queues[type_to_add].find { |i| !used_items.include?(i) }
-          break unless next_item
-
-          window_items << next_item
-          current_counts[type_to_add] += 1
+      class WindowSlotCalculator
+        def initialize(type_ratios, type_order)
+          @type_ratios = type_ratios
+          @type_order  = type_order
         end
 
-        window_items
-      end
-
-      def calculate_window_targets(type_ratios, window_size)
-        targets = type_ratios.transform_values { |ratio| (window_size * ratio).floor }
-        ensure_minimum_representation(targets, type_ratios)
-        scale_down_if_needed(targets, window_size)
-        distribute_remaining_slots(targets, type_ratios, window_size)
-        targets
-      end
-
-      def find_next_type(type_ratios, current_counts, target_counts, type_queues, used_items)
-        current_ratios = compute_current_ratios(current_counts, type_ratios)
-        eligible = eligible_types(type_ratios, current_counts, target_counts, type_queues, used_items)
-        eligible.min_by { |t| (current_ratios[t] || 0) - type_ratios[t] }
-      end
-
-      def ensure_minimum_representation(targets, type_ratios)
-        type_ratios.each_key do |t|
-          targets[t] = 1 if type_ratios[t].positive? && targets[t] < 1
+        def calculate(window_size)
+          slots = build_initial_slots(window_size)
+          distribute_remaining_slots(slots)
+          slots
         end
-      end
 
-      def scale_down_if_needed(targets, window_size)
-        total = targets.values.sum
-        return unless total > window_size
+        private
 
-        factor = window_size.to_f / total
-        targets.transform_values! { |count| (count * factor).floor }
-      end
+        def build_initial_slots(window_size)
+          slots             = {}
+          remaining_ratio   = 1.0
+          @remaining_slots  = window_size
 
-      def distribute_remaining_slots(targets, type_ratios, window_size)
-        remaining = window_size - targets.values.sum
-        return unless remaining.positive?
+          ordered_types.each do |t|
+            ratio  = @type_ratios[t] || 0
+            target = calculate_target(window_size, ratio, remaining_ratio)
+            slots[t] = target
+            @remaining_slots -= target
+            remaining_ratio -= ratio
+          end
 
-        sorted = type_ratios.sort_by { |_t, r| -r }.map(&:first)
-        remaining.times { |i| targets[sorted[i % sorted.size]] += 1 }
-      end
+          slots
+        end
 
-      def compute_current_ratios(current_counts, type_ratios)
-        total = current_counts.values.sum.to_f
-        return type_ratios.dup if total.zero?
+        def calculate_target(size, ratio, rem_ratio)
+          tgt = (size * (ratio / rem_ratio)).floor
+          tgt = [tgt, @remaining_slots].min
+          tgt = 1 if ratio.positive? && tgt.zero? && @remaining_slots.positive?
+          tgt
+        end
 
-        current_counts.transform_values { |c| c / total }
-      end
+        def distribute_remaining_slots(slots)
+          return if @remaining_slots <= 0
 
-      def eligible_types(type_ratios, current_counts, target_counts, type_queues, used_items)
-        type_ratios.keys.select do |t|
-          type_queues[t].any? { |i| !used_items.include?(i) } &&
-            current_counts[t] < target_counts[t]
+          types = sorted_distribution_types
+          @remaining_slots.times { |i| slots[types[i % types.size]] += 1 }
+        end
+
+        def ordered_types
+          @type_order || @type_ratios.keys
+        end
+
+        def sorted_distribution_types
+          if @type_order
+            @type_order & @type_ratios.keys
+          else
+            @type_ratios.sort_by { |_t, r| -r }.map(&:first)
+          end
         end
       end
     end
