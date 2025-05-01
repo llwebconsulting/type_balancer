@@ -99,4 +99,4 @@ jobs:
           gem install type_balancer-*.gem
       
       - name: Run quality checks
-        run: ruby -I lib examples/quality.rb 
+        run: bundle exec rake quality:all 

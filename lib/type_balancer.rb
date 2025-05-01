@@ -1,13 +1,15 @@
 # frozen_string_literal: true
 
 require 'type_balancer/version'
-require 'type_balancer/calculator'
 require_relative 'type_balancer/balancer'
 require_relative 'type_balancer/ratio_calculator'
 require_relative 'type_balancer/batch_processing'
-require 'type_balancer/position_calculator'
+require_relative 'type_balancer/position_calculator'
 require_relative 'type_balancer/type_extractor'
 require_relative 'type_balancer/type_extractor_registry'
+require_relative 'type_balancer/strategies/base_strategy'
+require_relative 'type_balancer/strategies/sliding_window_strategy'
+require_relative 'type_balancer/strategy_factory'
 
 module TypeBalancer
   class Error < StandardError; end
@@ -16,22 +18,32 @@ module TypeBalancer
   class EmptyCollectionError < Error; end
   class InvalidTypeError < Error; end
 
+  # Register default strategies
+  StrategyFactory.register(:sliding_window, Strategies::SlidingWindowStrategy)
+
   # Load Ruby implementations
   require_relative 'type_balancer/distribution_calculator'
   require_relative 'type_balancer/ordered_collection_manager'
-  require_relative 'type_balancer/alternating_filler'
-  require_relative 'type_balancer/sequential_filler'
+  require_relative 'type_balancer/type_extractor'
+  require_relative 'type_balancer/type_extractor_registry'
+  require_relative 'type_balancer/ratio_calculator'
+  require_relative 'type_balancer/position_calculator'
   require_relative 'type_balancer/distributor'
+  require_relative 'type_balancer/sequential_filler'
+  require_relative 'type_balancer/alternating_filler'
+  require_relative 'type_balancer/balancer'
+  require_relative 'type_balancer/batch_processing'
+  require_relative 'type_balancer/calculator'
 
   def self.calculate_positions(total_count:, ratio:, available_items: nil)
-    Distributor.calculate_target_positions(
+    PositionCalculator.calculate_positions(
       total_count: total_count,
       ratio: ratio,
-      available_positions: available_items
+      available_items: available_items
     )
   end
 
-  def self.balance(items, type_field: :type, type_order: nil)
+  def self.balance(items, type_field: :type, type_order: nil, strategy: nil, **strategy_options)
     # Input validation
     raise EmptyCollectionError, 'Collection cannot be empty' if items.empty?
 
@@ -44,11 +56,17 @@ module TypeBalancer
       raise Error, "Cannot access type field '#{type_field}': #{e.message}"
     end
 
-    # Initialize balancer with type order and type field
-    balancer = Balancer.new(types, type_field: type_field, type_order: type_order)
+    # Create calculator with strategy options
+    calculator = Calculator.new(
+      items,
+      type_field: type_field,
+      types: type_order || types,
+      strategy: strategy,
+      **strategy_options
+    )
 
     # Balance items
-    balancer.call(items)
+    calculator.call
   end
 
   # Backward compatibility methods

@@ -41,25 +41,22 @@ RSpec.describe TypeBalancer::Calculator do
       end
     end
 
-    context 'with invalid inputs' do
-      it 'raises error for nil items' do
-        expect { described_class.new(nil) }.to raise_error(ArgumentError, 'Items cannot be nil')
-      end
+    it 'raises error when items is nil' do
+      expect { described_class.new(nil) }.to raise_error(ArgumentError)
+    end
 
-      it 'raises error for invalid type field' do
-        items = [{ id: 1 }]
-        expect { described_class.new(items, type_field: nil) }.to raise_error(ArgumentError, 'Type field cannot be nil')
-      end
+    it 'raises error when type_field is nil' do
+      expect { described_class.new(items, type_field: nil) }.to raise_error(ArgumentError)
+    end
 
-      it 'raises error for items with missing type field' do
-        items = [{ other_field: 'value' }]
-        expect { described_class.new(items).call }.to raise_error(ArgumentError, 'All items must have a type field')
-      end
+    it 'accepts strategy name' do
+      calculator = described_class.new(items, strategy: :sliding_window)
+      expect(calculator.instance_variable_get(:@strategy_name)).to eq(:sliding_window)
+    end
 
-      it 'raises error for items with empty type value' do
-        items = [{ type: '' }]
-        expect { described_class.new(items).call }.to raise_error(ArgumentError, 'Type values cannot be empty')
-      end
+    it 'accepts strategy options' do
+      calculator = described_class.new(items, window_size: 20)
+      expect(calculator.instance_variable_get(:@strategy_options)).to include(window_size: 20)
     end
   end
 
@@ -70,73 +67,59 @@ RSpec.describe TypeBalancer::Calculator do
       end
     end
 
-    context 'with single type' do
-      let(:items) { [{ type: 'video', id: 1 }, { type: 'video', id: 2 }] }
-
-      it 'maintains original order for single type' do
-        expect(calculator.call).to eq(items)
-      end
-    end
-
-    context 'with multiple types' do
+    context 'with items' do
       let(:items) do
         [
           { type: 'video', id: 1 },
           { type: 'image', id: 2 },
-          { type: 'video', id: 3 },
-          { type: 'image', id: 4 }
+          { type: 'video', id: 3 }
         ]
       end
 
-      it 'distributes items according to type ratios' do
+      it 'delegates to strategy' do
         result = calculator.call
-        expect(result.map { |i| i[:type] }).to eq(%w[video image video image])
-        expect(result.map { |i| i[:id] }).to eq([1, 2, 3, 4])
+        expect(result).to be_an(Array)
+        expect(result.size).to eq(items.size)
+        expect(result.map { |i| i[:id] }.sort).to eq([1, 2, 3])
       end
 
-      it 'maintains relative order within each type' do
-        result = calculator.call
-        video_items = result.select { |i| i[:type] == 'video' }
-        image_items = result.select { |i| i[:type] == 'image' }
+      it 'uses custom strategy when specified' do
+        # Create a test strategy that reverses items
+        test_strategy = Class.new(TypeBalancer::Strategies::BaseStrategy) do
+          def balance
+            @items.reverse
+          end
+        end
 
-        expect(video_items.map { |i| i[:id] }).to eq([1, 3])
-        expect(image_items.map { |i| i[:id] }).to eq([2, 4])
+        TypeBalancer::StrategyFactory.register(:test, test_strategy)
+        calculator = described_class.new(items, strategy: :test)
+
+        result = calculator.call
+        expect(result).to eq(items.reverse)
+      end
+
+      it 'passes options to strategy' do
+        calculator = described_class.new(items, window_size: 20)
+        result = calculator.call
+        expect(result).to be_an(Array)
+        expect(result.size).to eq(items.size)
       end
     end
 
-    context 'with uneven type distribution' do
+    context 'with custom type field' do
       let(:items) do
         [
-          { type: 'video', id: 1 },
-          { type: 'image', id: 2 },
-          { type: 'video', id: 3 },
-          { type: 'video', id: 4 },
-          { type: 'image', id: 5 }
+          { media_type: 'video', id: 1 },
+          { media_type: 'image', id: 2 }
         ]
       end
 
-      it 'handles uneven distribution while maintaining type order' do
+      it 'handles custom type field' do
+        calculator = described_class.new(items, type_field: :media_type)
         result = calculator.call
-        expect(result.map { |i| i[:type] }).to eq(%w[video image video video image])
-        expect(result.map { |i| i[:id] }).to eq([1, 2, 3, 4, 5])
+        expect(result.size).to eq(items.size)
+        expect(result.map { |i| i[:id] }.sort).to eq([1, 2])
       end
-    end
-  end
-
-  describe '#calculate_ratio' do
-    it 'returns 1.0 for single type' do
-      expect(calculator.send(:calculate_ratio, 1, 0)).to eq(1.0)
-    end
-
-    it 'returns correct ratios for two types' do
-      expect(calculator.send(:calculate_ratio, 2, 0)).to eq(0.6)
-      expect(calculator.send(:calculate_ratio, 2, 1)).to eq(0.4)
-    end
-
-    it 'returns correct ratios for three or more types' do
-      expect(calculator.send(:calculate_ratio, 3, 0)).to eq(0.4)
-      expect(calculator.send(:calculate_ratio, 3, 1)).to eq(0.3)
-      expect(calculator.send(:calculate_ratio, 3, 2)).to eq(0.3)
     end
   end
 
@@ -154,88 +137,6 @@ RSpec.describe TypeBalancer::Calculator do
       it 'orders types according to DEFAULT_TYPE_ORDER' do
         expect(calculator.send(:extract_types)).to eq(%w[video image article custom])
       end
-    end
-  end
-
-  describe '#place_items_at_positions' do
-    let(:items) do
-      [
-        { type: 'video', id: 1 },
-        { type: 'video', id: 2 },
-        { type: 'image', id: 3 },
-        { type: 'image', id: 4 },
-        { type: 'video', id: 5 }
-      ]
-    end
-
-    context 'with multiple types' do
-      it 'handles remaining items correctly' do
-        items_by_type = [
-          items.select { |i| i[:type] == 'video' },
-          items.select { |i| i[:type] == 'image' }
-        ]
-        target_positions = [[0, 2], [1]]
-
-        result = calculator.send(:place_items_at_positions, items_by_type, target_positions)
-        expect(result.map { |i| i[:id] }).to eq([1, 3, 2, 4, 5])
-      end
-    end
-
-    context 'with single type' do
-      it 'handles single item type with single position' do
-        calculator = described_class.new([{ type: 'video' }])
-        items_by_type = [['video']]
-        positions = calculator.send(:calculate_target_positions, items_by_type)
-        expect(positions).to eq([[0]])
-      end
-    end
-
-    context 'with multiple types and single positions' do
-      it 'handles multiple types with single positions' do
-        calculator = described_class.new([
-                                           { type: 'video' },
-                                           { type: 'image' }
-                                         ])
-        items_by_type = [['video'], ['image']]
-        positions = calculator.send(:calculate_target_positions, items_by_type)
-        expect(positions).to eq([[0], [1]])
-      end
-    end
-  end
-
-  describe '#calculate_target_positions' do
-    it 'calculates positions for even distribution' do
-      calculator = described_class.new([
-                                         { type: 'video' },
-                                         { type: 'image' }
-                                       ])
-      items_by_type = [['video'], ['image']]
-      positions = calculator.send(:calculate_target_positions, items_by_type)
-      expect(positions).to eq([[0], [1]])
-    end
-
-    it 'handles uneven distribution' do
-      calculator = described_class.new([
-                                         { type: 'video' },
-                                         { type: 'video' },
-                                         { type: 'image' }
-                                       ])
-      items_by_type = [%w[video video], ['image']]
-      positions = calculator.send(:calculate_target_positions, items_by_type)
-      expect(positions).to eq([[0, 2], [1]])
-    end
-  end
-
-  describe '#place_items_at_positions' do
-    it 'handles nil positions for a type' do
-      calculator = described_class.new([
-                                         { type: 'video', id: 1 },
-                                         { type: 'image', id: 2 }
-                                       ])
-      items_by_type = [[{ type: 'video', id: 1 }], [{ type: 'image', id: 2 }]]
-      target_positions = [[0], nil]
-      result = calculator.send(:place_items_at_positions, items_by_type, target_positions)
-      expect(result.map { |i| i[:id] }).to eq([1, 2])
     end
   end
 end

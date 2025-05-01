@@ -17,6 +17,24 @@ Rake::ExtensionTask.new('type_balancer') do |ext|
   ext.config_options = ['--with-cflags=-Wall -Wextra -O3']
 end
 
+# Quality check tasks
+namespace :quality do
+  desc 'Run basic quality checks'
+  task :basic do
+    puts "\nRunning basic quality checks..."
+    ruby '-I lib examples/quality.rb'
+  end
+
+  desc 'Run large scale balance tests'
+  task :large_scale do
+    puts "\nRunning large scale balance tests..."
+    ruby '-I lib examples/large_scale_balance_test.rb'
+  end
+
+  desc 'Run all quality checks'
+  task all: %i[basic large_scale]
+end
+
 # Add GoogleTest task using CMake
 namespace :gtest do
   desc 'Build and run all GoogleTest tests'
@@ -62,7 +80,7 @@ task test_with_mocks: [:spec] do
   Rake::Task['gtest:all'].invoke
 end
 
-task default: [:test_with_mocks, 'lint:all']
+task default: [:test_with_mocks, 'lint:all', 'quality:all']
 
 # Benchmark tasks
 namespace :benchmark do
