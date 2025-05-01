@@ -19,7 +19,7 @@ module TypeBalancer
 
         type_queues = group_items_by_type
         result = []
-        used_item_ids = Set.new
+        used_items = Set.new
 
         # If there's only one type, return items in original order
         return @items.dup if type_queues.size == 1
@@ -31,26 +31,26 @@ module TypeBalancer
         # Process items in windows
         while result.size < @items.size
           window_size = [[@window_size, @items.size - result.size].min, 1].max
-          window_items = balance_window(type_queues, type_ratios, window_size, used_item_ids)
+          window_items = balance_window(type_queues, type_ratios, window_size, used_items)
 
           # If we couldn't fill the window, add remaining items in their original order
           if window_items.empty?
             # Add remaining items in their original order
             @items.each do |item|
-              next if used_item_ids.include?(item[:id])
+              next if used_items.include?(item)
 
               result << item
-              used_item_ids.add(item[:id])
+              used_items.add(item)
             end
             break
           end
 
           # Add window items to result
           window_items.each do |item|
-            next if used_item_ids.include?(item[:id])
+            next if used_items.include?(item)
 
             result << item
-            used_item_ids.add(item[:id])
+            used_items.add(item)
           end
         end
 
@@ -59,19 +59,19 @@ module TypeBalancer
 
       private
 
-      def balance_window(type_queues, type_ratios, window_size, used_item_ids)
+      def balance_window(type_queues, type_ratios, window_size, used_items)
         window_items = []
         target_counts = calculate_window_targets(type_ratios, window_size)
         current_counts = Hash.new(0)
 
         while window_items.size < window_size
-          type_to_add = find_next_type(type_ratios, current_counts, target_counts, type_queues, used_item_ids)
+          type_to_add = find_next_type(type_ratios, current_counts, target_counts, type_queues, used_items)
           break unless type_to_add
 
           # Find next available item of this type that hasn't been used
           next_item = nil
           type_queues[type_to_add].each do |item|
-            unless used_item_ids.include?(item[:id])
+            unless used_items.include?(item)
               next_item = item
               break
             end
@@ -112,7 +112,7 @@ module TypeBalancer
         initial_targets
       end
 
-      def find_next_type(type_ratios, current_counts, target_counts, type_queues, used_item_ids)
+      def find_next_type(type_ratios, current_counts, target_counts, type_queues, used_items)
         # Calculate current proportions
         total_current = current_counts.values.sum.to_f
         current_ratios = if total_current.zero?
@@ -123,7 +123,7 @@ module TypeBalancer
 
         # Find the type that's most behind its target
         type_ratios.keys.select do |type|
-          next false if type_queues[type].all? { |item| used_item_ids.include?(item[:id]) }
+          next false if type_queues[type].all? { |item| used_items.include?(item) }
           next false if current_counts[type] >= target_counts[type]
 
           true

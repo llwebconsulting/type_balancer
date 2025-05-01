@@ -24,6 +24,7 @@ class QualityChecker
     check_balance_method_robust
     check_real_world_feed
     check_custom_type_field
+    check_strategy_system
 
     print_summary
     exit(@issues.empty? ? 0 : 1)
@@ -349,6 +350,75 @@ class QualityChecker
       puts "#{RED}Custom field test failed: #{found.inspect}#{RESET}"
     end
     print_section_table('custom_type_field', 1, found == expected ? 1 : 0)
+  end
+
+  def check_strategy_system
+    puts "\n#{YELLOW}Strategy System Tests:#{RESET}"
+    @section_examples_run = 0
+    @section_examples_passed = 0
+
+    # Test default strategy
+    @examples_run += 1
+    @section_examples_run += 1
+    items = [
+      { type: 'video', id: 1 },
+      { type: 'image', id: 2 },
+      { type: 'video', id: 3 }
+    ]
+    result = TypeBalancer.balance(items, type_field: :type)
+    if result.size == items.size && result.map { |i| i[:id] }.sort == [1, 2, 3]
+      @examples_passed += 1
+      @section_examples_passed += 1
+      puts "#{GREEN}Default strategy test passed#{RESET}"
+    else
+      record_issue("Default strategy test failed: unexpected result #{result.inspect}")
+      puts "#{RED}Default strategy test failed#{RESET}"
+    end
+
+    # Test sliding window strategy with custom window size
+    @examples_run += 1
+    @section_examples_run += 1
+    items = [
+      { type: 'video', id: 1 },
+      { type: 'image', id: 2 },
+      { type: 'video', id: 3 },
+      { type: 'image', id: 4 }
+    ]
+    result = TypeBalancer.balance(items, type_field: :type, strategy: :sliding_window, window_size: 2)
+    if result.size == items.size && 
+       result[0..1].map { |i| i[:type] }.uniq.size == 2 # First window has both types
+      @examples_passed += 1
+      @section_examples_passed += 1
+      puts "#{GREEN}Sliding window strategy with custom window size test passed#{RESET}"
+    else
+      record_issue("Sliding window strategy test failed: unexpected result #{result.inspect}")
+      puts "#{RED}Sliding window strategy with custom window size test failed#{RESET}"
+    end
+
+    # Test strategy with custom type order
+    @examples_run += 1
+    @section_examples_run += 1
+    items = [
+      { type: 'video', id: 1 },
+      { type: 'image', id: 2 },
+      { type: 'article', id: 3 }
+    ]
+    result = TypeBalancer.balance(
+      items,
+      type_field: :type,
+      strategy: :sliding_window,
+      types: %w[image video article]
+    )
+    if result.size == items.size && result.first[:type] == 'image'
+      @examples_passed += 1
+      @section_examples_passed += 1
+      puts "#{GREEN}Strategy with custom type order test passed#{RESET}"
+    else
+      record_issue("Strategy with custom type order test failed: unexpected result #{result.inspect}")
+      puts "#{RED}Strategy with custom type order test failed#{RESET}"
+    end
+
+    print_section_table('strategy_system')
   end
 
   def print_summary

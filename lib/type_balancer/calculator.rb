@@ -84,6 +84,7 @@ module TypeBalancer
 
       def calculate_evenly_spaced_positions(total_count, target_count, ratio)
         return [0] if target_count == 1
+        return handle_two_positions_in_three_slots if target_count == 2 && total_count == 3
         return handle_two_thirds_case(total_count) if two_thirds_ratio?(ratio, total_count)
 
         (0...target_count).map do |i|
@@ -96,6 +97,10 @@ module TypeBalancer
       end
 
       def handle_two_thirds_case(_total_count)
+        [0, 1]
+      end
+
+      def handle_two_positions_in_three_slots
         [0, 1]
       end
 

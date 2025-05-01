@@ -18,6 +18,7 @@ class LargeScaleBalanceTest
       'type_b' => 175, # 35%
       'type_c' => 75   # 15%
     }
+    @window_sizes = [10, 25, 50, 100]
   end
 
   def run
@@ -29,7 +30,25 @@ class LargeScaleBalanceTest
     end
 
     test_data = generate_test_data
+
+    # Test default strategy
+    puts "\n#{YELLOW}Testing Default Strategy (Sliding Window)#{RESET}"
     run_balance_test(test_data)
+
+    # Test with different window sizes
+    @window_sizes.each do |size|
+      puts "\n#{YELLOW}Testing Sliding Window Strategy with Window Size #{size}#{RESET}"
+      run_balance_test(test_data, strategy: :sliding_window, window_size: size)
+    end
+
+    # Test with custom type order
+    puts "\n#{YELLOW}Testing with Custom Type Order#{RESET}"
+    run_balance_test(
+      test_data,
+      strategy: :sliding_window,
+      types: %w[type_c type_b type_a],
+      window_size: 25
+    )
   end
 
   private
@@ -44,11 +63,12 @@ class LargeScaleBalanceTest
     items.shuffle
   end
 
-  def run_balance_test(items)
+  def run_balance_test(items, strategy_options = {})
     puts "\nRunning balance test..."
+    puts "Strategy options: #{strategy_options.inspect}" unless strategy_options.empty?
 
     # Balance the items
-    balanced_items = TypeBalancer.balance(items, type_field: :type)
+    balanced_items = TypeBalancer.balance(items, type_field: :type, **strategy_options)
 
     # Analyze distribution in chunks
     chunk_sizes = [10, 25, 50, 100]
@@ -61,8 +81,20 @@ class LargeScaleBalanceTest
     distribution = balanced_items.map { |item| item[:type] }.tally
     distribution.each do |type, count|
       percentage = (count.to_f / balanced_items.length * 100).round(1)
-      puts "#{type}: #{count} (#{percentage}%)"
+      target_percentage = (@type_distribution[type].to_f / @total_records * 100).round(1)
+      diff = (percentage - target_percentage).abs.round(1)
+      color = if diff <= 1.0
+                GREEN
+              elsif diff <= 2.0
+                YELLOW
+              else
+                RED
+              end
+      puts "#{color}#{type}: #{count} (#{percentage}%) - Target: #{target_percentage}% (Diff: #{diff}%)#{RESET}"
     end
+
+    # Analyze type transitions
+    analyze_type_transitions(balanced_items)
   end
 
   def analyze_chunk(items, size)
@@ -96,6 +128,25 @@ class LargeScaleBalanceTest
     total = @type_distribution.values.sum
     @type_distribution.transform_values do |count|
       (count.to_f / total) * chunk_size
+    end
+  end
+
+  def analyze_type_transitions(items)
+    puts "\nType Transition Analysis:"
+    transitions = Hash.new { |h, k| h[k] = Hash.new(0) }
+    total_transitions = 0
+
+    items.each_cons(2) do |a, b|
+      transitions[a[:type]][b[:type]] += 1
+      total_transitions += 1
+    end
+
+    transitions.each do |from_type, to_types|
+      puts "\nTransitions from #{from_type}:"
+      to_types.each do |to_type, count|
+        percentage = (count.to_f / total_transitions * 100).round(1)
+        puts "  to #{to_type}: #{count} (#{percentage}%)"
+      end
     end
   end
 end

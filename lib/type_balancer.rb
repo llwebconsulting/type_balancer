@@ -43,7 +43,7 @@ module TypeBalancer
     )
   end
 
-  def self.balance(items, type_field: :type, type_order: nil)
+  def self.balance(items, type_field: :type, type_order: nil, strategy: nil, **strategy_options)
     # Input validation
     raise EmptyCollectionError, 'Collection cannot be empty' if items.empty?
 
@@ -56,11 +56,17 @@ module TypeBalancer
       raise Error, "Cannot access type field '#{type_field}': #{e.message}"
     end
 
-    # Initialize balancer with type order and type field
-    balancer = Balancer.new(types, type_field: type_field, type_order: type_order)
+    # Create calculator with strategy options
+    calculator = Calculator.new(
+      items,
+      type_field: type_field,
+      types: type_order || types,
+      strategy: strategy,
+      **strategy_options
+    )
 
     # Balance items
-    balancer.call(items)
+    calculator.call
   end
 
   # Backward compatibility methods

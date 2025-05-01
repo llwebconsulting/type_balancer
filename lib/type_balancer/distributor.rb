@@ -33,13 +33,18 @@ module TypeBalancer
 
         # For two positions
         if target_count == 2
+          # Special case for three slots
+          if total_count == 3
+            return [valid_positions[0], valid_positions[1]] if valid_positions.size >= 2
+
+            return [valid_positions.first, valid_positions.first + 1]
+          end
+
           # Special case for invalid positions that go beyond total_count
           if available_positions.any? { |pos| pos >= total_count }
             valid_positions = available_positions.select { |pos| pos >= 0 }.sort
             return [valid_positions.first, valid_positions.last]
           end
-          # For three slots, use first two positions
-          return [valid_positions[0], valid_positions[1]] if total_count == 3
 
           # Otherwise use first and last
           return [valid_positions.first, valid_positions.last]
