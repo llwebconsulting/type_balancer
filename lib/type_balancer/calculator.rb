@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require_relative 'strategy_factory'
+require_relative 'strategies/base_strategy'
+require_relative 'strategies/sliding_window_strategy'
+
 module TypeBalancer
   # Handles calculation of positions for balanced item distribution
   class PositionCalculator
@@ -105,114 +109,41 @@ module TypeBalancer
   class Calculator
     DEFAULT_TYPE_ORDER = %w[video image strip article].freeze
 
-    def initialize(items, type_field: :type, types: nil)
+    def initialize(items, type_field: :type, types: nil, strategy: nil, **strategy_options)
       raise ArgumentError, 'Items cannot be nil' if items.nil?
       raise ArgumentError, 'Type field cannot be nil' if type_field.nil?
 
       @items = items
       @type_field = type_field
-      @types = types || extract_types
+      @types = types
+      @strategy_name = strategy
+      @strategy_options = strategy_options
     end
 
     def call
       return [] if @items.empty?
 
-      validate_items!
+      # Create strategy instance
+      strategy = StrategyFactory.create(
+        @strategy_name,
+        items: @items,
+        type_field: @type_field,
+        types: @types || extract_types,
+        **@strategy_options
+      )
 
-      items_by_type = @types.map { |type| @items.select { |item| item[@type_field].to_s == type } }
-
-      # Calculate target positions for each type
-      target_positions = calculate_target_positions(items_by_type)
-
-      # Place items at their target positions
-      place_items_at_positions(items_by_type, target_positions)
+      # Balance items using strategy
+      strategy.balance
     end
 
     private
-
-    def validate_items!
-      @items.each do |item|
-        raise ArgumentError, 'All items must have a type field' unless item.key?(@type_field)
-        raise ArgumentError, 'Type values cannot be empty' if item[@type_field].to_s.strip.empty?
-      end
-    end
 
     def extract_types
       types = @items.map { |item| item[@type_field].to_s }.uniq
       DEFAULT_TYPE_ORDER.select { |type| types.include?(type) } + (types - DEFAULT_TYPE_ORDER)
     end
-
-    def calculate_target_positions(items_by_type)
-      total_count = @items.size
-      available_positions = (0...total_count).to_a
-
-      items_by_type.map.with_index do |_items, index|
-        ratio = calculate_ratio(items_by_type.size, index)
-        target_count = (total_count * ratio).round
-
-        # Calculate positions based on ratio and total count
-        if target_count == 1
-          [index]
-        else
-          # For better distribution, calculate positions based on available slots
-          step = available_positions.size.fdiv(target_count)
-          positions = (0...target_count).map do |i|
-            pos_index = (i * step).round
-            available_positions[pos_index]
-          end
-
-          # Remove used positions from available ones
-          positions.each { |pos| available_positions.delete(pos) }
-          positions
-        end
-      end
-    end
-
-    def calculate_ratio(type_count, index)
-      case type_count
-      when 1 then 1.0
-      when 2 then index.zero? ? 0.6 : 0.4
-      else
-        # For 3+ types: first type gets 0.4, rest split remaining 0.6 evenly
-        remaining = (0.6 / (type_count - 1).to_f).round(6)
-        index.zero? ? 0.4 : remaining
-      end
-    end
-
-    def place_items_at_positions(items_by_type, target_positions)
-      result = Array.new(@items.size)
-      used_items = place_items_at_target_positions(items_by_type, target_positions, result)
-      fill_empty_slots(result, used_items)
-      result.compact
-    end
-
-    def place_items_at_target_positions(items_by_type, target_positions, result)
-      used_items = []
-      items_by_type.each_with_index do |items, type_index|
-        positions = target_positions[type_index] || []
-        place_type_items(items, positions, result, used_items)
-      end
-      used_items
-    end
-
-    def place_type_items(items, positions, result, used_items)
-      items.take(positions.size).each_with_index do |item, item_index|
-        pos = positions[item_index]
-        next unless pos && result[pos].nil?
-
-        result[pos] = item
-        used_items << item
-      end
-    end
-
-    def fill_empty_slots(result, used_items)
-      remaining_items = @items - used_items
-      empty_slots = result.each_index.select { |i| result[i].nil? }
-      empty_slots.zip(remaining_items).each do |slot, item|
-        break unless item
-
-        result[slot] = item
-      end
-    end
   end
 end
+
+# Register default strategy
+TypeBalancer::StrategyFactory.register(:sliding_window, TypeBalancer::Strategies::SlidingWindowStrategy)

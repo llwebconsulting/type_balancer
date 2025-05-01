@@ -35,4 +35,12 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  config.before do
+    # Reset and register default strategies before each test
+    TypeBalancer::StrategyFactory.instance_variable_set(:@strategies, {})
+    TypeBalancer::StrategyFactory.instance_variable_set(:@default_strategy, nil)
+    TypeBalancer::StrategyFactory.register(:sliding_window, TypeBalancer::Strategies::SlidingWindowStrategy)
+    TypeBalancer::StrategyFactory.default_strategy = :sliding_window
+  end
 end
