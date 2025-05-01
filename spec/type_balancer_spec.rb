@@ -101,25 +101,12 @@ RSpec.describe TypeBalancer do
     context 'with custom type field' do
       subject(:balanced_items) { described_class.balance(items, type_field: :category) }
 
-      let(:test_item_class) { Struct.new(:category, :name) }
       let(:items) do
         [
-          test_item_class.new('video', 'Video 1'),
-          test_item_class.new('image', 'Image 1'),
-          test_item_class.new('strip', 'Strip 1')
+          { category: 'video', name: 'Video 1' },
+          { category: 'image', name: 'Image 1' },
+          { category: 'strip', name: 'Strip 1' }
         ]
-      end
-
-      before do
-        # Mock how the items will be balanced with custom type field
-        expected_result = [
-          test_item_class.new('video', 'Video 1'),
-          test_item_class.new('image', 'Image 1'),
-          test_item_class.new('strip', 'Strip 1')
-        ]
-
-        allow(TypeBalancer::Balancer).to receive(:new).and_return(balancer_instance)
-        allow(balancer_instance).to receive(:call).and_return(expected_result)
       end
 
       it 'preserves all items' do
@@ -128,8 +115,8 @@ RSpec.describe TypeBalancer do
       end
 
       it 'uses the custom type field for distribution' do
-        types = balanced_items.map(&:category)
-        expect(types).to eq(%w[video image strip])
+        types = balanced_items.map { |item| item[:category] }
+        expect(types.uniq.sort).to eq(%w[image strip video])
       end
     end
   end
