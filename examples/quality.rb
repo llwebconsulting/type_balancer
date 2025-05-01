@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'type_balancer'
+require_relative '../lib/type_balancer'
 require 'yaml'
 
 class QualityChecker
@@ -422,20 +422,23 @@ class QualityChecker
   end
 
   def print_summary
-    puts "\n#{'-' * 50}"
-    puts 'Quality Check Summary:'
+    puts "\n#{'-' * 80}"
+    puts "#{YELLOW}QUALITY CHECK SUMMARY#{RESET}"
+    puts "#{'-' * 80}"
     puts "Examples Run: #{@examples_run}"
-    puts "Expectations Passed: #{@examples_passed}"
+    puts "Examples Passed: #{@examples_passed}"
+    puts "Examples Failed: #{@examples_run - @examples_passed}"
+    puts "#{'-' * 80}"
 
     if @issues.empty?
-      puts "\n#{GREEN}All quality checks passed! ✓#{RESET}"
+      puts "\n#{GREEN}✓ FINAL STATUS: ALL QUALITY CHECKS PASSED!#{RESET}"
     else
-      puts "\n#{RED}Quality check failed with #{@issues.size} issues:#{RESET}"
+      puts "\n#{RED}✗ FINAL STATUS: QUALITY CHECKS FAILED WITH #{@issues.size} ISSUES:#{RESET}"
       @issues.each_with_index do |issue, index|
         puts "#{RED}#{index + 1}. #{issue}#{RESET}"
       end
     end
-    puts "#{'-' * 50}"
+    puts "#{'-' * 80}"
   end
 
   # Print a summary table for a section

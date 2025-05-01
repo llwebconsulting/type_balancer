@@ -94,3 +94,6 @@ RSpec/Rails:
 # Disable PredicateMatcher cop that's causing errors
 RSpec/PredicateMatcher:
   Enabled: false
+
+Style/HashExcept:
+  Enabled: false

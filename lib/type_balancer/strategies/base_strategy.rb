@@ -4,10 +4,11 @@ module TypeBalancer
   module Strategies
     # Base class for all balancing strategies
     class BaseStrategy
-      def initialize(items:, type_field:, types: nil)
+      def initialize(items:, type_field:, types: nil, type_order: nil)
         @items = items
         @type_field = type_field
         @types = types
+        @type_order = type_order
       end
 
       # Interface method that all strategies must implement
@@ -26,7 +27,15 @@ module TypeBalancer
 
       def extract_types
         types = @items.map { |item| item[@type_field].to_s }.uniq
-        DEFAULT_TYPE_ORDER.select { |type| types.include?(type) } + (types - DEFAULT_TYPE_ORDER)
+        if @type_order
+          # First include ordered types that exist in the items
+          ordered = @type_order & types
+          # Then append any remaining types that weren't in the order
+          ordered + (types - @type_order)
+        else
+          # Use default order if no custom order provided
+          DEFAULT_TYPE_ORDER.select { |type| types.include?(type) } + (types - DEFAULT_TYPE_ORDER)
+        end
       end
 
       def group_items_by_type

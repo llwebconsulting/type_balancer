@@ -114,26 +114,30 @@ module TypeBalancer
   class Calculator
     DEFAULT_TYPE_ORDER = %w[video image strip article].freeze
 
-    def initialize(items, type_field: :type, types: nil, strategy: nil, **strategy_options)
+    # rubocop:disable Metrics/ParameterLists
+    def initialize(items, type_field: :type, types: nil, type_order: nil, strategy: nil, **strategy_options)
       raise ArgumentError, 'Items cannot be nil' if items.nil?
       raise ArgumentError, 'Type field cannot be nil' if type_field.nil?
 
       @items = items
       @type_field = type_field
       @types = types
+      @type_order = type_order
       @strategy_name = strategy
       @strategy_options = strategy_options
     end
+    # rubocop:enable Metrics/ParameterLists
 
     def call
       return [] if @items.empty?
 
-      # Create strategy instance
+      # Create strategy instance with all options
       strategy = StrategyFactory.create(
         @strategy_name,
         items: @items,
         type_field: @type_field,
         types: @types || extract_types,
+        type_order: @type_order,
         **@strategy_options
       )
 
@@ -145,7 +149,14 @@ module TypeBalancer
 
     def extract_types
       types = @items.map { |item| item[@type_field].to_s }.uniq
-      DEFAULT_TYPE_ORDER.select { |type| types.include?(type) } + (types - DEFAULT_TYPE_ORDER)
+      if @type_order
+        # First include ordered types that exist in the items
+        ordered = @type_order & types
+        # Then append any remaining types that weren't in the order
+        ordered + (types - @type_order)
+      else
+        DEFAULT_TYPE_ORDER.select { |type| types.include?(type) } + (types - DEFAULT_TYPE_ORDER)
+      end
     end
   end
 end
