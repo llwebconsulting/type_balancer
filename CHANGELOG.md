@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.2.1] - 2025-05-01
+
+### Performance
+- Major performance improvements in the sliding window strategy implementation:
+  - Optimized window position calculation algorithm
+  - Improved batch processing for large collections
+  - Enhanced type distribution handling
+  - Reduced memory usage and allocation
+- Updated benchmark results showing consistent performance:
+  - Tiny collections (10 items): 8-13μs
+  - Small collections (100 items): 68-104μs
+  - Medium collections (1,000 items): 648ms-1.03ms
+  - Large collections (10,000 items): 6.6-10.0ms
+
+### Enhanced
+- Improved test suite with more focused test cases
+- Reduced test execution time by optimizing large-scale test data
+- Better handling of type ordering in Calculator and BaseStrategy
+- Enhanced quality.rb output formatting for better readability
+- Simplified large_scale_balance_test.rb implementation
+
+### Fixed
+- Rubocop violations:
+  - Disabled Style/HashExcept cop
+  - Added parameter list exceptions for complex method signatures
+- Improved require statements in example scripts to use require_relative
+
 ## [0.2.0] - 2025-04-30
 
 ### Added
